@@ -1,0 +1,74 @@
+{
+  "type": "path",
+  "name": "Path",
+  "visible": true,
+  "children": [],
+  "translate": [
+    -160,
+    -160
+  ],
+  "rotate": 0,
+  "scale": [
+    1,
+    1
+  ],
+  "fillStyle": "#601070",
+  "strokeStyle": "#9B37C1",
+  "lineWidth": 1,
+  "miterLimit": 10,
+  "lineDash": "",
+  "lineJoin": "miter",
+  "lineCap": "butt",
+  "points": [
+    [
+      48,
+      0
+    ],
+    [
+      272,
+      0
+    ],
+    [
+      288,
+      32
+    ],
+    [
+      320,
+      48
+    ],
+    [
+      320,
+      272
+    ],
+    [
+      288,
+      288
+    ],
+    [
+      272,
+      320
+    ],
+    [
+      48,
+      320
+    ],
+    [
+      32,
+      288
+    ],
+    [
+      0,
+      272
+    ],
+    [
+      0,
+      48
+    ],
+    [
+      32,
+      32
+    ]
+  ],
+  "closed": true,
+  "version": "1.0.2"
+}
