@@ -16,21 +16,44 @@ const meleeRange = 20;
 
 const blackBoard = {
     phase: 1,
+    convert: 0,
 }
 const gameEvents = {
     convert: {
-        condition: (time) => time-startTime >= 10000,
-        action: () => units["redPlayer"].amber = true,
-        endon: () => true,
+        condition: (time) => time-startTime >= 10000+(blackBoard.convert * 80000) && !units["redPlayer"].amber,
+        action: () => {units["redPlayer"].amber = true; blackBoard.convert += 1; units["redPlayer"].willpower = 100; console.log('Convert')},
+        endon: () => false,
     },
     convertToAmber: {
         condition: () => units["redPlayer"].amber && units["redPlayer"].image != units["redPlayer"].monstrosityImage,
-        action: () => units["redPlayer"].image = units["redPlayer"].monstrosityImage,
+        action: () => { units["redPlayer"].image = units["redPlayer"].monstrosityImage;
+                        console.log(units["redPlayer"].willpower);
+                        const breakButton = document.getElementById("break");
+                        let wpInterval;
+                        wpInterval = setInterval( (player) => {
+                            if (!units["redPlayer"].amber) clearInterval(wpInterval);
+                            player.willpower -= 2; 
+                            // console.log(player);
+                            console.log(`Willpower: ${player.willpower}`);
+
+                         }, 2000, units["redPlayer"]);
+                        breakButton.classList.add("disabled");
+        },
+        endon: () => false,
+    },
+    enableBreak: {
+        condition: () => units["redPlayer"].amber && (units["redPlayer"].hp/units["redPlayer"].maxhp) <= 0.2,
+        action: () => {
+                        const breakButton = document.getElementById("break");
+                        breakButton.classList.remove("disabled");
+        },
         endon: () => false,
     },
     convertToPlayer: {
         condition: () => !units["redPlayer"].amber && units["redPlayer"].image != units["redPlayer"].raiderImage,
-        action: () => {units["redPlayer"].image = units["redPlayer"].raiderImage; units["redPlayer"].hp = units["redPlayer"].maxhp},
+        action: () => { units["redPlayer"].image = units["redPlayer"].raiderImage; 
+                        units["redPlayer"].hp = units["redPlayer"].maxhp;
+                    },
         endon: () => false,
     },
     bossSpawn: {
@@ -42,7 +65,7 @@ const gameEvents = {
         endon: () => true,
     },
     monstrositySpawn: {
-        condition: (time) => !units["monstrosity"].active && time-startTime >= 15000,
+        condition: (time) => !units["monstrosity"].active && (units["boss"].hp / units["boss"].maxhp) <= 0.7,
         action: () => { units["monstrosity"].active = true;
                         units["monstrosity"].hp = units["monstrosity"].maxhp,
                         units["tank"].target = units["monstrosity"],
@@ -82,17 +105,22 @@ const gameEvents = {
         endon: () => true,
     },
     playerAmberDamageTaken: {
-        condition: () => units["redPlayer"].amber,
+        condition: () => units["redPlayer"].amber && blackBoard.phase != 3,
         action: () => {
                         const p = units["redPlayer"];
                         const percenthp = p.hp/p.maxhp;
                         if (percenthp > 0.25) {
-                            damageUnit(p, "Raid", 500);
+                            damageUnit(p, "Raid", 150);
                         } else {
-                            damageUnit(p, "Raid", 100);
+                            damageUnit(p, "Raid", 85);
                         }
                     },
         endon: () => false,
+    },
+    playerDead: {
+        condition: () => units["redPlayer"].active && (units["redPlayer"].hp <= 0 || units["redPlayer"].willpower <= 0),
+        action: () => units["redPlayer"].active = false,
+        endon: () => true,
     },
     amberCarapaceRemove: {
         condition: () => units["boss"].active && blackBoard.phase == 3,
@@ -132,6 +160,7 @@ const units = {
                     name: "Sprinklez",
                     team: 1,
                     amber: false,
+                    active: true,
                     x: canvasElement.clientWidth / 2,
                     y: canvasElement.clientHeight / 2,
                     velocityX: 0,
@@ -303,7 +332,7 @@ let spellKeys ={
 
 function draw() {
     const currentTime = (new Date).getTime();
-    if ((currentTime - lastUpdate) >= UPDATEFREQ) {
+    if (units["redPlayer"].active && (currentTime - lastUpdate) >= UPDATEFREQ) {
         update(currentTime);
         lastUpdate = currentTime;
         drawGameBackground();
@@ -313,6 +342,7 @@ function draw() {
         drawObject(units["redPlayer"]);
 
         drawUnitFrames();
+        drawFakeBigWigs();
     }
     
     requestAnimationFrame(draw);
@@ -352,6 +382,24 @@ function drawUnitFrames() {
 
     const p = units["redPlayer"];
     const pPercenthp = p.hp/p.maxhp;
+
+    const wpFrameDimensions = [400, 30];
+    const wpFrameLeftCorner = [Math.round((width/2)-(wpFrameDimensions[0]/2)), 125];
+    const wpBarDimensions = [wpFrameDimensions[0]-4, wpFrameDimensions[1]-4];
+
+    if (p.amber) {
+        context.beginPath();
+        context.fillStyle = 'rgba(0, 0, 0, 0.7)';;
+        context.rect(wpFrameLeftCorner[0], wpFrameLeftCorner[1], wpFrameDimensions[0], wpFrameDimensions[1] );
+        context.fill();
+
+        const barWidth = Math.round(wpBarDimensions[0] * (p.willpower/100))
+        context.beginPath();
+        context.fillStyle = 'rgb(219, 150, 0)';
+        context.rect(wpFrameLeftCorner[0]+2, wpFrameLeftCorner[1]+2, barWidth, wpBarDimensions[1] );
+        context.fill();
+    }
+
     context.beginPath();
     context.fillStyle = "black";
     context.rect(playerFrame[0], playerFrame[1], playerFrame[2], playerFrame[3]);
@@ -432,6 +480,14 @@ function drawUnitFrames() {
             context.fillText(timeLeft,x+6,y+8);
         }
     }
+
+}
+
+function drawFakeBigWigs() {
+    
+
+
+    //draw fakeWigs
 }
 
 function drawCenter(ctx){
@@ -786,7 +842,6 @@ function doAction(id) {
                                     return baseAmount * (1 + 0.1 * (toUnit.debuffs.find(d => d.name === "Destabilize")?.count || 1));
                                 }  })
             }
-            console.log(debuffIndex)
             break;
         case "struggle":
             //self-interrupt: NYI
@@ -794,16 +849,18 @@ function doAction(id) {
         case "consume":
             if (puddles.length > 0) { 
                 puddles.shift();
-                player.willpower += blackBoard.phase == 3 ? 50 : 20;
+                player.willpower += 20; // HM 50 though...
+                player.willpower = player.willpower > 100 ? 100 : player.willpower;
             }
             break;
         case "break":
-            // bCanDoAction = (player.hp / player.maxhp) <= 0.2;
+            player.amber = false;
             break;
     }
 }
 
 function startCooldown(button) {
+    if (!units["redPlayer"].amber) return;
     if (button._cooldownRunning) return;
     if (button.className.includes("disabled")) return;
     if (!canDoAction(button.id)) return;
