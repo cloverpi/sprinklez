@@ -12,10 +12,12 @@ const UPDATEFREQ = 16.67;
 let lastUpdate = (new Date).getTime();
 const startTime = (new Date).getTime();
 const meleeRange = 20;
+const winImage = newImage("images/wooo2.webp");
 
 const blackBoard = {
     phase: 1,
     convert: 0,
+    end: {win: false, loss: false} //w/e
 }
 const gameEvents = {
     convertToAmber: {
@@ -29,7 +31,7 @@ const gameEvents = {
                             if (!units["redPlayer"].amber){ clearInterval(wpInterval); return};
                             player.willpower -= 2; 
 
-                         }, 2000, units["redPlayer"]);
+                         }, 1000, units["redPlayer"]);
                         breakButton.classList.add("disabled");
         },
         endon: () => false,
@@ -394,7 +396,30 @@ let spellKeys ={
     "4": {id: "break", time: 0} ,
 }
 
+function win(){
+    console.log('you win');
+    // context.beginPath();
+  
+    // console.log(winImage);
+    context.drawImage(
+        winImage,
+        25,
+        25,
+
+    );
+    // requestAnimationFrame(win);
+}
+
+function loss(){
+
+}
+
 function draw() {
+    if (blackBoard["end"].win) win();
+    if (blackBoard["end"].loss) loss();
+    if (blackBoard["end"].win || blackBoard["end"].loss) return;
+    
+    
     const currentTime = (new Date).getTime();
     if (units["redPlayer"].active && (currentTime - lastUpdate) >= UPDATEFREQ) {
         update(currentTime);
@@ -959,7 +984,7 @@ function canDoAction(id) {
             if (puddles.length > 0) { 
                 puddles.sort((a,b) => distanceFromUnitToXY("redPlayer", a.x, a.y) > distanceFromUnitToXY("redPlayer", b.x, b.y));
                 const puddle = puddles[0];
-                bCanDoAction = inRange(player,puddle.x + puddle.centerX, puddle.y + puddle.centerY,0);
+                bCanDoAction = inRange(player,puddle.x + puddle.centerX, puddle.y + puddle.centerY,10);
             }
             break;
         case "break":
