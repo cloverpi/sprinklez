@@ -368,8 +368,8 @@ const units = {
                         velocityX: 0,
                         velocityY: 0,
                         radius: 20,
-                        centerX: 20,
-                        centerY: 20,
+                        centerX: 0,
+                        centerY: 0,
                         red: 287,
                         green: 185,
                         blue: 57,
@@ -769,6 +769,10 @@ function drawObject(object) {
         object.radius * 2,
         object.radius * 2
     );
+    // context.beginPath();
+    // context.arc(object.x, object.y, 3, 0, 2 * Math.PI);
+    // context.fillStyle = 'red';
+    // context.fill();
 }
 
 function stayOnScreen(object, bounce) {
@@ -982,9 +986,9 @@ function canDoAction(id) {
             break;
         case "consume":
             if (puddles.length > 0) { 
-                puddles.sort((a,b) => distanceFromUnitToXY("redPlayer", a.x, a.y) > distanceFromUnitToXY("redPlayer", b.x, b.y));
+                puddles.sort((a,b) => distanceFromUnitToXY("redPlayer", a.x, a.y) - distanceFromUnitToXY("redPlayer", b.x, b.y));
                 const puddle = puddles[0];
-                bCanDoAction = inRange(player,puddle.x + puddle.centerX, puddle.y + puddle.centerY,10);
+                bCanDoAction = distanceFromUnitToXY("redPlayer", puddle.x, puddle.y) <= 30+puddle.radius;
             }
             break;
         case "break":
