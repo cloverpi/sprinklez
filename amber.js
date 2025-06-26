@@ -169,13 +169,13 @@ const units = {
                     debuffs:[],
                     casting: -1,
                     spells: [
-                                { name: "Amber Explosion (YOU)", lastCast: 0, cooldown: 13, castTime: 2, interruptible: false }
+                                { name: "Amber Explosion (YOU)", lastCast: -1, cooldown: 13, castTime: 2, interruptible: false }
                             ],
                     target: undefined,
                     behavior: function() {
                             return Selector([
                                 Sequence([
-                                    Condition((u) => u.amber && u.casting == -1 && (Date.now() - u.spells[0].lastCast) >= (u.spells[0].cooldown * 1000)),
+                                    Condition((u) => u.amber && u.casting == -1 && u.spells[0].lastCast != -1 && (Date.now() - u.spells[0].lastCast) >= (u.spells[0].cooldown * 1000)),
                                     Named("Casting Amber Explosion (YOU)", Action((u) => {
                                         u.casting = 0;
                                         u.spells[u.casting].lastCast = Date.now();
