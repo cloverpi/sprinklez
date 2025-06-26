@@ -3,13 +3,12 @@ import * as ai from './ai.js';
 const { Named, Selector, Sequence, Condition, Action, inRange, unitInRange, applyVelocityFromGoals, performAttack } = ai
 
 const canvasElement = document.getElementById("secret");
-const scoreDisplay = document.getElementById("score");
 const context = canvasElement.getContext("2d");
 
 const { width, height } = canvasElement;
 const gameHeight = height;
 
-const UPDATEFREQ = 8;
+const UPDATEFREQ = 16.67;
 let lastUpdate = (new Date).getTime();
 const startTime = (new Date).getTime();
 const meleeRange = 20;
@@ -19,22 +18,16 @@ const blackBoard = {
     convert: 0,
 }
 const gameEvents = {
-    convert: {
-        condition: (time) => time-startTime >= 10000+(blackBoard.convert * 80000) && !units["redPlayer"].amber,
-        action: () => {units["redPlayer"].amber = true; blackBoard.convert += 1; units["redPlayer"].willpower = 100; console.log('Convert')},
-        endon: () => false,
-    },
     convertToAmber: {
         condition: () => units["redPlayer"].amber && units["redPlayer"].image != units["redPlayer"].monstrosityImage,
-        action: () => { units["redPlayer"].image = units["redPlayer"].monstrosityImage;
-                        console.log(units["redPlayer"].willpower);
+        action: (time) => { units["redPlayer"].image = units["redPlayer"].monstrosityImage;
+                        units["redPlayer"].willpower = 100;
+                        units["redPlayer"].spells[0].lastCast = time;
                         const breakButton = document.getElementById("break");
                         let wpInterval;
                         wpInterval = setInterval( (player) => {
-                            if (!units["redPlayer"].amber) clearInterval(wpInterval);
+                            if (!units["redPlayer"].amber){ clearInterval(wpInterval); return};
                             player.willpower -= 2; 
-                            // console.log(player);
-                            console.log(`Willpower: ${player.willpower}`);
 
                          }, 2000, units["redPlayer"]);
                         breakButton.classList.add("disabled");
@@ -66,8 +59,9 @@ const gameEvents = {
     },
     monstrositySpawn: {
         condition: (time) => !units["monstrosity"].active && (units["boss"].hp / units["boss"].maxhp) <= 0.7,
-        action: () => { units["monstrosity"].active = true;
+        action: (time) => { units["monstrosity"].active = true;
                         units["monstrosity"].hp = units["monstrosity"].maxhp,
+                        units["monstrosity"].spells[0].lastCast = time, //start amber explosion on CD.
                         units["tank"].target = units["monstrosity"],
                         units["monstrosity"].target = units["tank"],
                         blackBoard.phase = 2
@@ -76,7 +70,7 @@ const gameEvents = {
     },
     bossRaidDamage: {
         condition: (time) => units["boss"].active && time-startTime >= 5000,
-        action: () => { damageUnit(units["boss"], "Raid", 100000);
+        action: () => { damageUnit(units["boss"], "Raid", 400000);
                         units["boss"].hp = units["boss"].hp < 0 ? 0 : units["boss"].hp},
         endon: () => units["boss"].hp <= 0,
     },
@@ -92,7 +86,7 @@ const gameEvents = {
     },
     monstrosityRaidDamage: {
         condition: (time) => units["monstrosity"].active &&  time-startTime >= 15000,
-        action: () => { damageUnit(units["monstrosity"], "Raid", 30000);
+        action: () => { damageUnit(units["monstrosity"], "Raid", 250000);
                         units["monstrosity"].hp = units["monstrosity"].hp < 0 ? 0 : units["monstrosity"].hp},
         endon: () => units["monstrosity"].hp < 0,
     },
@@ -110,9 +104,9 @@ const gameEvents = {
                         const p = units["redPlayer"];
                         const percenthp = p.hp/p.maxhp;
                         if (percenthp > 0.25) {
-                            damageUnit(p, "Raid", 150);
+                            damageUnit(p, "Raid", 1500);
                         } else {
-                            damageUnit(p, "Raid", 85);
+                            damageUnit(p, "Raid", 800);
                         }
                     },
         endon: () => false,
@@ -171,9 +165,30 @@ const units = {
                     hp: 420000,
                     maxhp: 420000,
                     willpower: 100,
-                    speed: 2,
+                    speed: 3,
                     debuffs:[],
+                    casting: -1,
+                    spells: [
+                                { name: "Amber Explosion (YOU)", lastCast: 0, cooldown: 13, castTime: 2, interruptible: false }
+                            ],
                     target: undefined,
+                    behavior: function() {
+                            return Selector([
+                                Sequence([
+                                    Condition((u) => u.amber && u.casting == -1 && (Date.now() - u.spells[0].lastCast) >= (u.spells[0].cooldown * 1000)),
+                                    Named("Casting Amber Explosion (YOU)", Action((u) => {
+                                        u.casting = 0;
+                                        u.spells[u.casting].lastCast = Date.now();
+                                        setTimeout(() => {  if (u.casting != -1) {
+                                                                console.log("KAAAABOOOOOOM");
+                                                                u.casting = -1
+                                                            };
+                                                        }, u.spells[u.casting].castTime * 1000);
+                                        return { status: "casting" };
+                                    }))
+                                ])
+                            ])(this);
+                        },
                     image: newImage("images/raider.webp"),
                     raiderImage: newImage("images/raider.webp"),
                     monstrosityImage: newImage("images/amberraider.webp"),
@@ -188,7 +203,7 @@ const units = {
                     radius: 40,
                     centerX: 40,
                     centerY: 40,
-                    speed: 2,
+                    speed: 3,
                     active: true,
                     target: undefined,
                     image: newImage("images/tank.webp"),
@@ -241,14 +256,37 @@ const units = {
                         radius: 50,
                         centerX: 50,
                         centerY: 50,
-                        speed: 2.1,
-                        debuffs: [
+                        speed: 3.2,
+                        debuffs: [],
+                        casting: -1,
+                        spells: [
+                            { name: "Reshape Life", lastCast: startTime-35000, cooldown: 48, castTime: 2, interruptible: false }
                         ],
                         hp: 1000000000,
                         maxhp: 1000000000,
                         image: newImage("images/amber-shaper.png"),
                         behavior: function() {
                             return Selector([
+                                Sequence([
+                                    Condition((u) => !units["redPlayer"].amber && u.casting == -1 && (Date.now() - u.spells[0].lastCast) >= (u.spells[0].cooldown * 1000)),
+                                    Named("Casting Reshape Life", Action((u) => {
+                                        u.casting = 0;
+                                        u.spells[u.casting].lastCast = Date.now();
+                                        setTimeout(() => {  units["redPlayer"].amber = true; 
+                                                            u.casting = -1;
+                                                        }, u.spells[u.casting].castTime * 1000);
+                                        return { status: "casting" };
+                                    }))
+                                ]),
+                                Sequence([
+                                    Condition((u) => u.casting != -1),
+                                    Named("Holding Position while casting", Action((u) => {
+                                        u.goals=[];
+                                        u.velocityX=0;
+                                        u.velocityY=0;
+                                        return { status: "casting: holding position" };
+                                    }))
+                                ]),
                                 Sequence([
                                     Condition((u) => blackBoard.phase === 3),
                                     Named("Move to P3 Location", Action((u) => {
@@ -257,7 +295,7 @@ const units = {
                                     }))
                                 ]),
                                 Sequence([
-                                    Condition((u) => units["tank"].active && !unitInRange(u, units["tank"])),
+                                    Condition((u) => units["tank"].active && !unitInRange(u, units["tank"]),5),
                                     Named("Move to Tank", Action((u) => {
                                         u.goals = [{ x: units["tank"].x, y: units["tank"].y, weight: 1 }];
                                         return { status: "running" };
@@ -277,8 +315,11 @@ const units = {
                         radius: 60,
                         centerX: 60,
                         centerY: 60,
-                        speed: 2.1,
-                        debuffs: [
+                        speed: 3.2,
+                        debuffs: [],
+                        casting: -1,
+                        spells: [
+                            { name: "Amber Explosion", lastCast: 0, cooldown: 50, castTime: 2, interruptible: true }
                         ],
                         hp: 327000000,
                         maxhp: 327000000,
@@ -286,7 +327,30 @@ const units = {
                         behavior: function() {
                             return Selector([
                                 Sequence([
-                                    Condition((u) => units["tank"].active && !unitInRange(u, units["tank"])),
+                                    Condition((u) => u.casting == -1 && (Date.now() - u.spells[0].lastCast) >= ((u.spells[0].cooldown+Math.random()*10) * 1000)),
+                                    Named("Casting Amber Explosion", Action((u) => {
+                                        u.casting = 0;
+                                        u.spells[u.casting].lastCast = Date.now();
+                                        setTimeout(() => {  
+                                                            if (u.casting != -1) {
+                                                                console.log("KAAAABOOOOOOM");
+                                                                u.casting = -1
+                                                            };
+                                                        }, u.spells[u.casting].castTime * 1000);
+                                        return { status: "casting" };
+                                    }))
+                                ]),
+                                Sequence([
+                                    Condition((u) => u.casting != -1),
+                                    Named("Holding Position while casting", Action((u) => {
+                                        u.goals=[];
+                                        u.velocityX=0;
+                                        u.velocityY=0;
+                                        return { status: "casting: holding position" };
+                                    }))
+                                ]),
+                                Sequence([
+                                    Condition((u) => units["tank"].active && !unitInRange(u, units["tank"],5)),
                                     Named("Move to Tank", Action((u) => {
                                         u.goals = [{ x: units["tank"].x, y: units["tank"].y, weight: 1 }];
                                         return { status: "running" };
@@ -342,7 +406,8 @@ function draw() {
         drawObject(units["redPlayer"]);
 
         drawUnitFrames();
-        drawFakeBigWigs();
+        drawFakeBigWigs(currentTime);
+        drawCastBars(currentTime);
     }
     
     requestAnimationFrame(draw);
@@ -383,7 +448,7 @@ function drawUnitFrames() {
     const p = units["redPlayer"];
     const pPercenthp = p.hp/p.maxhp;
 
-    const wpFrameDimensions = [400, 30];
+    const wpFrameDimensions = [300, 30];
     const wpFrameLeftCorner = [Math.round((width/2)-(wpFrameDimensions[0]/2)), 125];
     const wpBarDimensions = [wpFrameDimensions[0]-4, wpFrameDimensions[1]-4];
 
@@ -483,11 +548,93 @@ function drawUnitFrames() {
 
 }
 
-function drawFakeBigWigs() {
+function drawFakeBigWigs(time) {
     
+    const deadlyfojjiwigsFrameDimensions = [180, 79];
+    const deadlyfojjiwigsFrameLeftCorner = [width-25-deadlyfojjiwigsFrameDimensions[0], 25];
+    const deadlyfojjiwigsBarDimensions = [deadlyfojjiwigsFrameDimensions[0]-4, 16];
+    
+    context.beginPath();
+    context.fillStyle = 'rgba(0, 0, 0, 0.65)';
+    context.rect(deadlyfojjiwigsFrameLeftCorner[0], deadlyfojjiwigsFrameLeftCorner[1], deadlyfojjiwigsFrameDimensions[0], deadlyfojjiwigsFrameDimensions[1]);
+    context.fill();
 
+    context.font = "16px arial";
+    context.textBaseline = "top";
+    context.fillStyle ="#AAAAAA";
+    context.fillText("Deadly Fojji Wigs",deadlyfojjiwigsFrameLeftCorner[0]+25,deadlyfojjiwigsFrameLeftCorner[1]+2);
 
-    //draw fakeWigs
+    let spellIndex = 0;
+    for (const unitKey of Object.keys(units)) {
+        const unit = units[unitKey];
+        if ( unit.spells != undefined && unit.spells.length > 0) {
+            const { spells } = unit;
+            for (const spell of spells) {
+                spellIndex++;
+                let timeLeft = ((spell.cooldown*1000)-(time - spell.lastCast))/1000;
+                timeLeft = timeLeft < 0 ? 0 : timeLeft;
+                const percentLeft = timeLeft / (spell.cooldown);
+                const barWidth = deadlyfojjiwigsBarDimensions[0] * percentLeft;
+
+                context.beginPath();
+                context.fillStyle = (timeLeft < 5) ? 'rgb(245, 49, 0)' : 'rgb(0, 245, 0)';
+                context.rect(deadlyfojjiwigsFrameLeftCorner[0]+2, deadlyfojjiwigsFrameLeftCorner[1]+((20)*spellIndex), barWidth, deadlyfojjiwigsBarDimensions[1]);
+                context.fill();
+
+                context.font = "10px arial";
+                context.textBaseline = "top";
+                context.fillStyle ="#4444CC";
+                context.fillText(spell.name,deadlyfojjiwigsFrameLeftCorner[0]+4,deadlyfojjiwigsFrameLeftCorner[1]+((20)*spellIndex)+3);
+
+                context.font = "10px arial";
+                context.textBaseline = "top";
+                context.fillStyle ="#4444CC";
+                context.fillText(timeLeft.toFixed(1),deadlyfojjiwigsFrameLeftCorner[0]+deadlyfojjiwigsBarDimensions[0]-20,deadlyfojjiwigsFrameLeftCorner[1]+((20)*spellIndex)+3);
+            }
+        }
+    }
+}
+
+function drawCastBars(time){
+
+    for (const unitKey of Object.keys(units)) {
+        const unit = units[unitKey];
+        if ( unit.spells != undefined && unit.casting != -1) {
+
+            const spell = unit.spells[unit.casting];
+            
+            const castBarFrameDimensions = [125, 40];
+            const unitx = Math.round(unit.x-(castBarFrameDimensions[0]/2));
+            const unity = Math.round(unit.y-unit.radius-30);
+            const castBarFrameLeftCorner = [unitx, unity];
+            const castBarDimensions = [castBarFrameDimensions[0]-4, castBarFrameDimensions[1]/2-4];
+                    
+            context.beginPath();
+            context.fillStyle = 'rgba(0, 0, 0, 0.8)';;
+            context.rect(castBarFrameLeftCorner[0], castBarFrameLeftCorner[1], castBarFrameDimensions[0], castBarFrameDimensions[1]);
+            context.fill();
+
+            const castPercent = ((time - spell.lastCast) / (spell.castTime * 1000));
+            const castTimeLeft = (spell.castTime - (spell.castTime*castPercent)).toFixed(1);
+            const barWidth = Math.round(castBarDimensions[0] * castPercent);
+
+            context.beginPath();
+            context.fillStyle = 'rgb(245, 49, 0)';
+            context.rect(castBarFrameLeftCorner[0]+2, castBarFrameLeftCorner[1]+20+2, barWidth, castBarDimensions[1]);
+            context.fill();
+
+            context.font = "12px arial";
+            context.textBaseline = "top";
+            context.fillStyle ="#AAAAAA";
+            context.fillText(unit.name,castBarFrameLeftCorner[0]+2,castBarFrameLeftCorner[1]+6);
+
+            context.font = "12px arial";
+            context.textBaseline = "top";
+            context.fillStyle ="#AAAAAA";
+            context.fillText(castTimeLeft,castBarFrameLeftCorner[0]+castBarFrameDimensions[0]-20,castBarFrameLeftCorner[1]+20+6);
+
+        }
+    }
 }
 
 function drawCenter(ctx){
@@ -661,7 +808,8 @@ function damageUnit(toUnit, fromUnit, amount) {
     toUnit.hp -= finalAmount;
 }
 
-function triggerEvents(time){
+function triggerEvents(){
+    const time = Date.now();
     Object.keys(gameEvents).forEach( (k) =>{
         if (gameEvents[k].condition(time)) {         
             gameEvents[k].action(time)
@@ -688,8 +836,6 @@ function update(time) {
 
     units["redPlayer"].velocityX = velocityX * speed;
     units["redPlayer"].velocityY = velocityY * speed;
-
-    triggerEvents(time);
 
     updateUnitAI();
 
@@ -805,7 +951,6 @@ function canDoAction(id) {
     switch (id) {
         case "amberstrike":
             if (target != undefined && target.active) bCanDoAction = unitInRange(player, target, meleeRange);
-            // console.log(unitInRange(player, target, meleeRange));
             break;
         case "struggle":
             bCanDoAction = player.willpower >= 8;
@@ -842,14 +987,16 @@ function doAction(id) {
                                     return baseAmount * (1 + 0.1 * (toUnit.debuffs.find(d => d.name === "Destabilize")?.count || 1));
                                 }  })
             }
+            if (target.casting != undefined && target.casting != -1 && target.spells[target.casting].interruptible) target.casting = -1;
             break;
         case "struggle":
-            //self-interrupt: NYI
+            player.casting = -1;
+            player.willpower -= 8;
             break;
         case "consume":
             if (puddles.length > 0) { 
                 puddles.shift();
-                player.willpower += 20; // HM 50 though...
+                player.willpower += 20; // HM 50 though...(in p3)
                 player.willpower = player.willpower > 100 ? 100 : player.willpower;
             }
             break;
@@ -908,9 +1055,10 @@ function updateUnitAI() {
         const unit = units[u];
         if (unit.active && unit.behavior != undefined) {
             unit.behavior()
-            applyVelocityFromGoals(unit)
+            if (u != "redPlayer") applyVelocityFromGoals(unit)
         }
     }
 }
 
 draw();
+setInterval(triggerEvents,200);

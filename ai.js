@@ -103,25 +103,3 @@ export function applyVelocityFromGoals(unit) {
         unit.velocityY = 0;
     }
 }
-
-// export const tankBehaviorTree = Selector([
-//     Sequence([
-//         Named("Is In Range?", Condition((u) => u.target && inRange(u, u.target))),
-//         Named("Attack Target", Action((u) => {
-//         performAttack(u, u.target);
-//         return { status: "success" };
-//         }))
-//     ]),
-//     Sequence([
-//         Named("Needs To Move?", Condition((u) => u.target && !inRange(u, u.target))),
-//         Named("Set Move Goal", Action((u) => {
-//         u.goals = [{ x: u.target.x, y: u.target.y, weight: 1 }];
-//         return { status: "running" };
-//         }))
-//     ]),
-//     Named("Idle", Action((u) => {
-//         u.velocityX = 0;
-//         u.velocityY = 0;
-//         return { status: "success" };
-//     }))
-// ]);
