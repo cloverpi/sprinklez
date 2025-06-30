@@ -1,4 +1,8 @@
 import * as ai from './ai.js';
+import { win, loss } from './endscreen.js';
+import { howToPlayInit, drawHowToPlay } from './howto.js';
+import { newImage } from './commonui.js'
+import { createButton, clearButtons, buttonDraw, simulateClick  } from './button.js';
 
 const { Named, Selector, Sequence, Condition, Action, inRange, unitInRange, applyVelocityFromGoals, performAttack } = ai
 
@@ -9,10 +13,9 @@ const { width, height } = canvasElement;
 const gameHeight = height;
 
 const UPDATEFREQ = 16.67;
-let lastUpdate = (new Date).getTime();
-const startTime = (new Date).getTime();
+let lastUpdate = Date.now();
+let startTime = Date.now();
 const meleeRange = 20;
-const winImage = newImage("images/wooo2.webp");
 
 const blackBoard = {
     phase: 1,
@@ -83,7 +86,7 @@ const gameEvents = {
     },
     bossDead: {
         condition: () => (!!units["boss"].active && units["boss"].hp <= 0),
-        action: () => units["boss"].active = false,
+        action: () => {units["boss"].active = false; blackBoard.end.win = true},
         endon: () => true
     },
     monstrosityRaidDamage: {
@@ -115,7 +118,7 @@ const gameEvents = {
     },
     playerDead: {
         condition: () => units["redPlayer"].active && (units["redPlayer"].hp <= 0 || units["redPlayer"].willpower <= 0),
-        action: () => units["redPlayer"].active = false,
+        action: () => {units["redPlayer"].active = false, blackBoard["end"].loss = true},
         endon: () => true,
     },
     amberCarapaceRemove: {
@@ -140,12 +143,6 @@ const gameEvents = {
                     },
         endon: () => false,
     }
-}
-
-function newImage(src) {
-    const img = new Image();
-    img.src = src;
-    return img;
 }
 
 const puddles = [];
@@ -396,23 +393,15 @@ let spellKeys ={
     "4": {id: "break", time: 0} ,
 }
 
-function win(){
-    console.log('you win');
-    // context.beginPath();
-  
-    // console.log(winImage);
-    context.drawImage(
-        winImage,
-        25,
-        25,
+function gameStartInit(){
+    startTime = Date.now();
+    lastUpdate = startTime;
+    clearButtons();
 
-    );
-    // requestAnimationFrame(win);
+    
+    draw();
 }
 
-function loss(){
-
-}
 
 function draw() {
     if (blackBoard["end"].win) win();
@@ -424,6 +413,7 @@ function draw() {
     if (units["redPlayer"].active && (currentTime - lastUpdate) >= UPDATEFREQ) {
         update(currentTime);
         lastUpdate = currentTime;
+        
         drawGameBackground();
         
         drawObject(units["tank"]);
@@ -479,7 +469,7 @@ function drawUnitFrames() {
 
     if (p.amber) {
         context.beginPath();
-        context.fillStyle = 'rgba(0, 0, 0, 0.7)';;
+        context.fillStyle = 'rgba(0, 0, 0, 0.7)';
         context.rect(wpFrameLeftCorner[0], wpFrameLeftCorner[1], wpFrameDimensions[0], wpFrameDimensions[1] );
         context.fill();
 
@@ -947,6 +937,7 @@ document.addEventListener("mousemove", event => {
     blackBoard.mouseY = relY > gameHeight ? gameHeight : relY;
 });
 
+
 function polarToCartesian(cx, cy, r, angle) {
     const rad = (angle - 90) * Math.PI / 180;
     return {
@@ -1011,7 +1002,7 @@ function doAction(id) {
                 target.debuffs[debuffIndex].count += 1
                 target.debuffs[debuffIndex].lastApply = currentTime;
             } else {
-                target.debuffs.push({ name: "Destabilize", icon: newImage("./images/as.jpg"), lastApply: currentTime, duration: 60, count: 1, 
+                target.debuffs.push({ name: "Destabilize", icon: newImage("./images/as.jpg"), lastApply: currentTime, duration: 15, count: 1, 
                                 dmgEffect: (toUnit, fromUnit, baseAmount) => {
                                     return baseAmount * (1 + 0.1 * (toUnit.debuffs.find(d => d.name === "Destabilize")?.count || 1));
                                 }  })
@@ -1089,5 +1080,8 @@ function updateUnitAI() {
     }
 }
 
-draw();
+// draw();
+howToPlayInit(gameStartInit);
+drawHowToPlay();
+// setInterval(drawHowToPlay, 1000 / 30);
 setInterval(triggerEvents,200);
