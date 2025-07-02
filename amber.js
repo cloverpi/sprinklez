@@ -39,6 +39,26 @@ const gameEvents = {
         },
         endon: () => false,
     },
+    convertTankToAmber: {
+        condition: () => units["tank2"].amber && units["tank2"].image != units["tank2"].monstrosityImage,
+        action: (time) => { units["tank2"].image = units["tank2"].monstrosityImage;
+                        units["tank2"].willpower = 100;
+                        units["tank2"].spells[0].lastCast = time;
+                        let wpInterval;
+                        let count = 0;
+                        wpInterval = setInterval( (tank) => {
+                            count += 2
+                            if (!units["tank2"].amber){ clearInterval(wpInterval); return};
+                            tank.willpower -= 2;
+                            if ( count >= 26 ) {
+                                tank.willpower -= 8;
+                                count = 0;
+                            }
+                            console.log(`Tank WP: ${tank.willpower}`)
+                         }, 1000, units["tank2"]);
+        },
+        endon: () => false,
+    },
     enableBreak: {
         condition: () => units["redPlayer"].amber && (units["redPlayer"].hp/units["redPlayer"].maxhp) <= 0.2,
         action: () => {
@@ -75,7 +95,7 @@ const gameEvents = {
     },
     bossRaidDamage: {
         condition: (time) => units["boss"].active && time-startTime >= 5000,
-        action: () => { damageUnit(units["boss"], "Raid", 400000);
+        action: () => { damageUnit(units["boss"], "Raid", 500000);
                         units["boss"].hp = units["boss"].hp < 0 ? 0 : units["boss"].hp},
         endon: () => units["boss"].hp <= 0,
     },
@@ -108,10 +128,23 @@ const gameEvents = {
         action: () => {
                         const p = units["redPlayer"];
                         const percenthp = p.hp/p.maxhp;
-                        if (percenthp > 0.25) {
-                            damageUnit(p, "Raid", 1500);
+                        if (percenthp > 0.23) {
+                            damageUnit(p, "Raid", 1950);
                         } else {
-                            damageUnit(p, "Raid", 800);
+                            damageUnit(p, "Raid", 550);
+                        }
+                    },
+        endon: () => false,
+    },
+    tankAmberDamageTaken: {
+        condition: () => units["tank2"].amber && blackBoard.phase != 3,
+        action: () => {
+                        const t = units["tank2"];
+                        const percenthp = t.hp/t.maxhp;
+                        if (percenthp > 0.23) {
+                            damageUnit(t, "Raid", 2100);
+                        } else {
+                            damageUnit(t, "Raid", 450);
                         }
                     },
         endon: () => false,
@@ -210,6 +243,19 @@ const units = {
                     behavior: function() {
                         return Selector([
                         Sequence([
+                          Condition((u) =>  {
+                                if (blackBoard.phase == 3) return false;
+                                if (puddles.length == 0) return false;
+                                puddles.sort((a,b) => distanceFromUnitToXY("tank", a.x, a.y) - distanceFromUnitToXY("tank", b.x, b.y));
+                                console.log(distanceFromUnitToXY("tank", puddles[0].x, puddles[0].y) <= 30+puddles[0].radius)
+                                return distanceFromUnitToXY("tank", puddles[0].x, puddles[0].y) >= 30+puddles[0].radius;
+                          }),
+                          Named("Move to Puddle", Action((u) => {
+                            u.goals = [{ x: puddles[0].x, y: puddles[0].y, weight: 1 }];
+                            return { status: "running" };
+                          }))
+                        ]),
+                        Sequence([
                           Condition((u) => units["boss"].active && !unitInRange(u, units["boss"], meleeRange)),
                           Named("Move to Boss", Action((u) => {
                             u.goals = [{ x: units["boss"].x, y: units["boss"].y, weight: 1 }];
@@ -223,18 +269,101 @@ const units = {
                             return { status: "running" };
                           }))
                         ]),
+                        // Sequence([
+                        //   Condition((u) =>
+                        //     units["boss"].active &&
+                        //     units["monstrosity"].active &&
+                        //     unitInRange(u, units["boss"], meleeRange) &&
+                        //     unitInRange(u, units["monstrosity"], meleeRange)
+                        //   ),
+                        //   Named("Move to Destination", Action((u) => {
+                        //     u.goals = [{ x: 550, y: 450, weight: 1 }];
+                        //     return { status: "running" };
+                        //   }))
+                        // ]),
+                        Named("Idle", Action((u) => {
+                          u.goals = [];
+                          u.velocityX = 0;
+                          u.velocityY = 0;
+                          return { status: "success" };
+                        }))
+                      ])(this)
+                    },
+                },
+    "tank2": {
+                    name: "Ronald",
+                    team: 1,
+                    amber: false,
+                    willpower: 100,
+                    x: canvasElement.clientWidth / 2-160,
+                    y: canvasElement.clientHeight / 2+120,
+                    velocityX: 0,
+                    velocityY: 0,
+                    radius: 40,
+                    centerX: 40,
+                    centerY: 40,
+                    speed: 3,
+                    debuffs:[],
+                    casting: -1,
+                    spells: [
+                                { name: "Amber Strike", lastCast: -1, cooldown: 6, castTime: 0, interruptible: false }
+                            ],
+                    active: true,
+                    target: undefined,
+                    image: newImage("images/tank.webp"),
+                    raiderImage: newImage("images/tank.webp"),
+                    monstrosityImage: newImage("images/ambertank.webp"),
+                    hp: 520000,
+                    behavior: function() {
+                        return Selector([
                         Sequence([
-                          Condition((u) =>
-                            units["boss"].active &&
-                            units["monstrosity"].active &&
-                            unitInRange(u, units["boss"], meleeRange) &&
-                            unitInRange(u, units["monstrosity"], meleeRange)
-                          ),
-                          Named("Move to Destination", Action((u) => {
-                            u.goals = [{ x: 550, y: 450, weight: 1 }];
+                          Condition((u) => units["tank2"].willpower < 30 && puddles.length > 0 && distanceFromUnitToXY("tank2", puddles[0].x, puddles[0].y) >= 30+puddles[0].radius ),
+                          Named("Move to Puddle", Action((u) => {
+                            u.goals = [{ x: puddles[0].x, y: puddles[0].y, weight: 1 }];
                             return { status: "running" };
                           }))
                         ]),
+                        Sequence([
+                          Condition((u) => units["tank2"].willpower < 30 && puddles.length > 0 && distanceFromUnitToXY("tank2", puddles[0].x, puddles[0].y) <= 30+puddles[0].radius ),
+                          Named("Cast Consume Amber", Action((u) => {
+                            u.goals = [];
+                            u.velocityX = 0;
+                            u.velocityY = 0;
+                            puddles.shift();
+                            u.willpower += blackBoard.phase == 3 ? 50 : 20;
+                            return { status: "casting" };
+                          }))
+                        ]),
+                        Sequence([
+                          Condition((u) => units["boss"].active && !unitInRange(u, units["boss"], meleeRange)),
+                          Named("Move to Boss", Action((u) => {
+                            u.goals = [{ x: units["boss"].x, y: units["boss"].y, weight: 1 }];
+                            return { status: "running" };
+                          }))
+                        ]),
+                        Sequence([
+                                    Condition((u) => units["tank2"].amber && (Date.now() - u.spells[0].lastCast) >= (u.spells[0].cooldown * 1000)),
+                                    Named("Casting Amber Strike", Action((u) => {
+                                        u.casting = 0;
+                                        u.spells[u.casting].lastCast = Date.now();
+                                        setTimeout(() => {  const currentTime = Date.now();
+                                                            const target = units["boss"];
+                                                            damageUnit(target, u, 332499);
+                                                                const debuffIndex = target.debuffs.findIndex( (d) =>  d.name === "Destabilize");
+                                                                if ( debuffIndex != -1 ) {
+                                                                    target.debuffs[debuffIndex].count += 1
+                                                                    target.debuffs[debuffIndex].lastApply = currentTime;
+                                                                } else {
+                                                                    target.debuffs.push({ name: "Destabilize", icon: newImage("./images/as.jpg"), lastApply: currentTime, duration: 15, count: 1, 
+                                                                                    dmgEffect: (toUnit, fromUnit, baseAmount) => {
+                                                                                        return baseAmount * (1 + 0.1 * (toUnit.debuffs.find(d => d.name === "Destabilize")?.count || 1));
+                                                                                    }  })
+                                                                }
+                                                            u.casting = -1;
+                                                        }, u.spells[u.casting].castTime * 1000);
+                                        return { status: "casting" };
+                                    }))
+                                ]),
                         Named("Idle", Action((u) => {
                           u.goals = [];
                           u.velocityX = 0;
@@ -259,7 +388,8 @@ const units = {
                         debuffs: [],
                         casting: -1,
                         spells: [
-                            { name: "Reshape Life", lastCast: startTime-35000, cooldown: 48, castTime: 2, interruptible: false }
+                            { name: "Reshape Life", lastCast: startTime-35000, cooldown: 48, castTime: 2, interruptible: false },
+                            { name: "Amber Scalpel", lastCast: startTime-40000, cooldown: 48, castTime: 10, interruptible: false }
                         ],
                         hp: 1000000000,
                         maxhp: 1000000000,
@@ -267,11 +397,44 @@ const units = {
                         behavior: function() {
                             return Selector([
                                 Sequence([
-                                    Condition((u) => !units["redPlayer"].amber && u.casting == -1 && (Date.now() - u.spells[0].lastCast) >= (u.spells[0].cooldown * 1000)),
+                                    Condition((u) => u.casting == -1 && (Date.now() - u.spells[1].lastCast) >= (u.spells[1].cooldown * 1000)),
+                                    Named("Casting Amber Scalpel", Action((u) => {
+                                        u.casting = 1;
+                                        u.spells[u.casting].lastCast = Date.now();
+                                        setTimeout(() => {  
+                                                            const numPuddles = Math.round(randomBellCurve(3,9,1.3));
+                                                            console.log(numPuddles);
+                                                            for (let i = 0; i<numPuddles; i++){
+                                                                puddles.push({ ...units["amberPuddle"] });
+                                                                puddles[puddles.length-1].x = Math.round(Math.random()*400)-200 + units["amberPuddle"].x;
+                                                                puddles[puddles.length-1].y = Math.round(Math.random()*250)-125 + units["amberPuddle"].y;
+                                                            }
+                                                           console.log(puddles.length);
+                                                            u.casting = -1;
+                                                        }, u.spells[u.casting].castTime * 1000);
+                                        return { status: "casting" };
+                                    }))
+                                ]),
+                                /* Sequence([
+                                    Condition((u) => !units["tank2"].amber && u.casting == -1 && (Date.now() - u.spells[0].lastCast) >= (u.spells[0].cooldown * 1000)),
                                     Named("Casting Reshape Life", Action((u) => {
                                         u.casting = 0;
                                         u.spells[u.casting].lastCast = Date.now();
-                                        setTimeout(() => {  units["redPlayer"].amber = true; 
+                                        setTimeout(() => {  units["tank2"].amber = true; 
+                                                            u.casting = -1;
+                                                        }, u.spells[u.casting].castTime * 1000);
+                                        return { status: "casting" };
+                                    }))
+                                ]), */
+                                Sequence([
+                                    Condition((u) => (!units["redPlayer"].amber || !units["tank2"]) && u.casting == -1 && (Date.now() - u.spells[0].lastCast) >= (u.spells[0].cooldown * 1000)),
+                                    Named("Casting Reshape Life", Action((u) => {
+                                        u.casting = 0;
+                                        u.spells[u.casting].lastCast = Date.now();
+                                        setTimeout(() => {  
+                                                            // units["redPlayer"].amber = true;
+                                                            const target = !units["tank2"].amber ? units["tank2"] : units["redPlayer"]
+                                                            target.amber = true;
                                                             u.casting = -1;
                                                         }, u.spells[u.casting].castTime * 1000);
                                         return { status: "casting" };
@@ -373,11 +536,6 @@ const units = {
                         maxColor: 40,
                     }
 }
-for (let i = 0; i<20; i++) {
-    puddles.push({ ...units["amberPuddle"] });
-    puddles[i].x = Math.round(Math.random()*400)-200 + puddles[i].x
-    puddles[i].y = Math.round(Math.random()*250)-125 + puddles[i].y
-}
 
 let movementKeys = {
     "w": false,
@@ -393,12 +551,35 @@ let spellKeys ={
     "4": {id: "break", time: 0} ,
 }
 
+function randomBellCurve(min, max, skew) {
+  let u = 0, v = 0;
+  while(u === 0) u = Math.random()
+  while(v === 0) v = Math.random()
+  let num = Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v )
+  
+  num = num / 10.0 + 0.5
+  if (num > 1 || num < 0) 
+    num = randn_bm(min, max, skew)
+  
+  else{
+    num = Math.pow(num, skew)
+    num *= max - min
+    num += min
+  }
+  return num
+}
+
+
 function gameStartInit(){
     startTime = Date.now();
-    lastUpdate = startTime;
+    lastUpdate = Date.now();
     clearButtons();
 
-    
+    // reset spell CD's on boss.
+    units["boss"].spells[0].lastCast = startTime - 35000
+    units["boss"].spells[1].lastCast = startTime - 40000
+
+    setInterval(triggerEvents,200);
     draw();
 }
 
@@ -417,6 +598,7 @@ function draw() {
         drawGameBackground();
         
         drawObject(units["tank"]);
+        drawObject(units["tank2"]);
         drawEnemies();
         drawObject(units["redPlayer"]);
 
@@ -582,29 +764,31 @@ function drawFakeBigWigs(time) {
     let spellIndex = 0;
     for (const unitKey of Object.keys(units)) {
         const unit = units[unitKey];
-        if ( unit.spells != undefined && unit.spells.length > 0) {
-            const { spells } = unit;
-            for (const spell of spells) {
-                spellIndex++;
-                let timeLeft = ((spell.cooldown*1000)-(time - spell.lastCast))/1000;
-                timeLeft = timeLeft < 0 ? 0 : timeLeft;
-                const percentLeft = timeLeft / (spell.cooldown);
-                const barWidth = deadlyfojjiwigsBarDimensions[0] * percentLeft;
+        if (unit.team != units["redPlayer"].team || unitKey == "redPlayer") {
+            if ( unit.active && unit.spells != undefined && unit.spells.length > 0 ) {
+                const { spells } = unit;
+                for (const spell of spells) {
+                    spellIndex++;
+                    let timeLeft = ((spell.cooldown*1000)-(time - spell.lastCast))/1000;
+                    timeLeft = timeLeft < 0 ? 0 : timeLeft;
+                    const percentLeft = timeLeft / (spell.cooldown);
+                    const barWidth = deadlyfojjiwigsBarDimensions[0] * percentLeft;
 
-                context.beginPath();
-                context.fillStyle = (timeLeft < 5) ? 'rgb(245, 49, 0)' : 'rgb(0, 245, 0)';
-                context.rect(deadlyfojjiwigsFrameLeftCorner[0]+2, deadlyfojjiwigsFrameLeftCorner[1]+((20)*spellIndex), barWidth, deadlyfojjiwigsBarDimensions[1]);
-                context.fill();
+                    context.beginPath();
+                    context.fillStyle = (timeLeft < 5) ? 'rgb(245, 49, 0)' : 'rgb(0, 245, 0)';
+                    context.rect(deadlyfojjiwigsFrameLeftCorner[0]+2, deadlyfojjiwigsFrameLeftCorner[1]+((20)*spellIndex), barWidth, deadlyfojjiwigsBarDimensions[1]);
+                    context.fill();
 
-                context.font = "10px arial";
-                context.textBaseline = "top";
-                context.fillStyle ="#4444CC";
-                context.fillText(spell.name,deadlyfojjiwigsFrameLeftCorner[0]+4,deadlyfojjiwigsFrameLeftCorner[1]+((20)*spellIndex)+3);
+                    context.font = "10px arial";
+                    context.textBaseline = "top";
+                    context.fillStyle ="#4444CC";
+                    context.fillText(spell.name,deadlyfojjiwigsFrameLeftCorner[0]+4,deadlyfojjiwigsFrameLeftCorner[1]+((20)*spellIndex)+3);
 
-                context.font = "10px arial";
-                context.textBaseline = "top";
-                context.fillStyle ="#4444CC";
-                context.fillText(timeLeft.toFixed(1),deadlyfojjiwigsFrameLeftCorner[0]+deadlyfojjiwigsBarDimensions[0]-20,deadlyfojjiwigsFrameLeftCorner[1]+((20)*spellIndex)+3);
+                    context.font = "10px arial";
+                    context.textBaseline = "top";
+                    context.fillStyle ="#4444CC";
+                    context.fillText(timeLeft.toFixed(1),deadlyfojjiwigsFrameLeftCorner[0]+deadlyfojjiwigsBarDimensions[0]-20,deadlyfojjiwigsFrameLeftCorner[1]+((20)*spellIndex)+3);
+                }
             }
         }
     }
@@ -614,40 +798,42 @@ function drawCastBars(time){
 
     for (const unitKey of Object.keys(units)) {
         const unit = units[unitKey];
-        if ( unit.spells != undefined && unit.casting != -1) {
+        if (unit.team != units["redPlayer"].team || unitKey == "redPlayer") {
+            if ( unit.spells != undefined && unit.casting != -1) {
 
-            const spell = unit.spells[unit.casting];
-            
-            const castBarFrameDimensions = [125, 40];
-            const unitx = Math.round(unit.x-(castBarFrameDimensions[0]/2));
-            const unity = Math.round(unit.y-unit.radius-30);
-            const castBarFrameLeftCorner = [unitx, unity];
-            const castBarDimensions = [castBarFrameDimensions[0]-4, castBarFrameDimensions[1]/2-4];
-                    
-            context.beginPath();
-            context.fillStyle = 'rgba(0, 0, 0, 0.8)';;
-            context.rect(castBarFrameLeftCorner[0], castBarFrameLeftCorner[1], castBarFrameDimensions[0], castBarFrameDimensions[1]);
-            context.fill();
+                const spell = unit.spells[unit.casting];
+                
+                const castBarFrameDimensions = [125, 40];
+                const unitx = Math.round(unit.x-(castBarFrameDimensions[0]/2));
+                const unity = Math.round(unit.y-unit.radius-30);
+                const castBarFrameLeftCorner = [unitx, unity];
+                const castBarDimensions = [castBarFrameDimensions[0]-4, castBarFrameDimensions[1]/2-4];
+                        
+                context.beginPath();
+                context.fillStyle = 'rgba(0, 0, 0, 0.8)';;
+                context.rect(castBarFrameLeftCorner[0], castBarFrameLeftCorner[1], castBarFrameDimensions[0], castBarFrameDimensions[1]);
+                context.fill();
 
-            const castPercent = ((time - spell.lastCast) / (spell.castTime * 1000));
-            const castTimeLeft = (spell.castTime - (spell.castTime*castPercent)).toFixed(1);
-            const barWidth = Math.round(castBarDimensions[0] * castPercent);
+                const castPercent = ((time - spell.lastCast) / (spell.castTime * 1000));
+                const castTimeLeft = (spell.castTime - (spell.castTime*castPercent)).toFixed(1);
+                const barWidth = Math.round(castBarDimensions[0] * castPercent);
 
-            context.beginPath();
-            context.fillStyle = 'rgb(245, 49, 0)';
-            context.rect(castBarFrameLeftCorner[0]+2, castBarFrameLeftCorner[1]+20+2, barWidth, castBarDimensions[1]);
-            context.fill();
+                context.beginPath();
+                context.fillStyle = 'rgb(245, 49, 0)';
+                context.rect(castBarFrameLeftCorner[0]+2, castBarFrameLeftCorner[1]+20+2, barWidth, castBarDimensions[1]);
+                context.fill();
 
-            context.font = "12px arial";
-            context.textBaseline = "top";
-            context.fillStyle ="#AAAAAA";
-            context.fillText(unit.name,castBarFrameLeftCorner[0]+2,castBarFrameLeftCorner[1]+6);
+                context.font = "12px arial";
+                context.textBaseline = "top";
+                context.fillStyle ="#AAAAAA";
+                context.fillText(unit.name,castBarFrameLeftCorner[0]+2,castBarFrameLeftCorner[1]+6);
 
-            context.font = "12px arial";
-            context.textBaseline = "top";
-            context.fillStyle ="#AAAAAA";
-            context.fillText(castTimeLeft,castBarFrameLeftCorner[0]+castBarFrameDimensions[0]-20,castBarFrameLeftCorner[1]+20+6);
+                context.font = "12px arial";
+                context.textBaseline = "top";
+                context.fillStyle ="#AAAAAA";
+                context.fillText(castTimeLeft,castBarFrameLeftCorner[0]+castBarFrameDimensions[0]-20,castBarFrameLeftCorner[1]+20+6);
 
+            }
         }
     }
 }
@@ -861,6 +1047,7 @@ function update(time) {
     stayOnScreen(units["redPlayer"], false);
     move(units["redPlayer"]);
     move(units["tank"]);
+    move(units["tank2"]);
     move(units["boss"]);
     move(units["monstrosity"]);
 }
@@ -1016,12 +1203,13 @@ function doAction(id) {
         case "consume":
             if (puddles.length > 0) { 
                 puddles.shift();
-                player.willpower += 20; // HM 50 though...(in p3)
+                player.willpower += blackBoard.phase < 3 ? 20 : 50;
                 player.willpower = player.willpower > 100 ? 100 : player.willpower;
             }
             break;
         case "break":
             player.amber = false;
+            player.casting = -1;
             break;
     }
 }
@@ -1084,4 +1272,3 @@ function updateUnitAI() {
 howToPlayInit(gameStartInit);
 drawHowToPlay();
 // setInterval(drawHowToPlay, 1000 / 30);
-setInterval(triggerEvents,200);
