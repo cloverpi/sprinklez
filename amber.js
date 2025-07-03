@@ -20,7 +20,9 @@ const meleeRange = 20;
 const blackBoard = {
     phase: 1,
     convert: 0,
-    end: {win: false, loss: false} //w/e
+    end: {win: false, loss: false}, //w/e
+    puddles: 0,
+    consumeAmber: 0,
 }
 const gameEvents = {
     convertToAmber: {
@@ -75,11 +77,15 @@ const gameEvents = {
         endon: () => false,
     },
     bossSpawn: {
-        condition: (time) => !units["boss"].active && time-startTime >= 5000,
-        action: () => { units["boss"].active = true;
-                        units["boss"].hp = units["boss"].maxhp,
-                        units["tank"].target = units["boss"],
-                        units["boss"].target = units["tank"] },
+        condition: (time) => !units["boss"].active && time-startTime >= 1000,
+        action: (time) => { units["boss"].active = true;
+                        units["boss"].hp = units["boss"].maxhp * 0.75;
+                        units["tank"].target = units["boss"];
+                        units["boss"].target = units["tank"];
+                        const debuffIndex = units["boss"].debuffs.findIndex( (d) =>  d.name === "Destabilize");
+                        units["boss"].debuffs[debuffIndex].count = 17;
+                        units["boss"].debuffs[debuffIndex].lastApply = time;
+                     },
         endon: () => true,
     },
     monstrositySpawn: {
@@ -175,7 +181,27 @@ const gameEvents = {
                         units["monstrosity"].debuffs = removeExpiredDebuffs(units["monstrosity"].debuffs);
                     },
         endon: () => false,
+    },
+    checkPools: {
+        condition: () => puddles.length > 0,
+        action: (time) => {
+                        for (let i = puddles.length -1; i >= 0; i--){
+                            if (time - puddles[i].spawnTime >= 30000) {
+                                puddles.splice(i, 1);
+                                setTimeout(()=> {
+                                    const puddle = { ...units["amberPuddle"] }
+                                    
+                                    puddle.x = Math.round(Math.random()*400)-200 + units["amberPuddle"].x;
+                                    puddle.y = Math.round(Math.random()*250)-125 + units["amberPuddle"].y;
+                                    puddle.spawnTime = Date.now();
+                                    puddles.push(puddle);
+                                }, randomBellCurve(8000,20000,0.75));
+                            }
+                        }
+                    },
+        endon: () => false,
     }
+
 }
 
 const puddles = [];
@@ -187,6 +213,7 @@ const units = {
                     team: 1,
                     amber: false,
                     active: true,
+                    spawnTime: startTime,
                     x: canvasElement.clientWidth / 2,
                     y: canvasElement.clientHeight / 2,
                     velocityX: 0,
@@ -237,24 +264,12 @@ const units = {
                     centerY: 40,
                     speed: 3,
                     active: true,
+                    spawnTime: startTime,
                     target: undefined,
                     image: newImage("images/tank.webp"),
                     hp: 520000,
                     behavior: function() {
                         return Selector([
-                        Sequence([
-                          Condition((u) =>  {
-                                if (blackBoard.phase == 3) return false;
-                                if (puddles.length == 0) return false;
-                                puddles.sort((a,b) => distanceFromUnitToXY("tank", a.x, a.y) - distanceFromUnitToXY("tank", b.x, b.y));
-                                console.log(distanceFromUnitToXY("tank", puddles[0].x, puddles[0].y) <= 30+puddles[0].radius)
-                                return distanceFromUnitToXY("tank", puddles[0].x, puddles[0].y) >= 30+puddles[0].radius;
-                          }),
-                          Named("Move to Puddle", Action((u) => {
-                            u.goals = [{ x: puddles[0].x, y: puddles[0].y, weight: 1 }];
-                            return { status: "running" };
-                          }))
-                        ]),
                         Sequence([
                           Condition((u) => units["boss"].active && !unitInRange(u, units["boss"], meleeRange)),
                           Named("Move to Boss", Action((u) => {
@@ -293,7 +308,7 @@ const units = {
     "tank2": {
                     name: "Ronald",
                     team: 1,
-                    amber: false,
+                    amber: true,
                     willpower: 100,
                     x: canvasElement.clientWidth / 2-160,
                     y: canvasElement.clientHeight / 2+120,
@@ -309,6 +324,7 @@ const units = {
                                 { name: "Amber Strike", lastCast: -1, cooldown: 6, castTime: 0, interruptible: false }
                             ],
                     active: true,
+                    spawnTime: startTime,
                     target: undefined,
                     image: newImage("images/tank.webp"),
                     raiderImage: newImage("images/tank.webp"),
@@ -316,20 +332,35 @@ const units = {
                     hp: 520000,
                     behavior: function() {
                         return Selector([
+                        //                             Sequence([
+                        //   Condition((u) =>  {
+                        //         if (blackBoard.phase == 3) return false;
+                        //         if (puddles.length == 0) return false;
+                        //         puddles.sort((a,b) => distanceFromUnitToXY("tank", a.x, a.y) - distanceFromUnitToXY("tank", b.x, b.y));
+                        //         console.log(distanceFromUnitToXY("tank", puddles[0].x, puddles[0].y) <= 30+puddles[0].radius)
+                        //         return distanceFromUnitToXY("tank", puddles[0].x, puddles[0].y) >= 30+puddles[0].radius;
+                        //   }),
+                        //   Named("Move to Puddle", Action((u) => {
+                        //     u.goals = [{ x: puddles[0].x, y: puddles[0].y, weight: 1 }];
+                        //     return { status: "running" };
+                        //   }))
+                        // ]),
                         Sequence([
-                          Condition((u) => units["tank2"].willpower < 30 && puddles.length > 0 && distanceFromUnitToXY("tank2", puddles[0].x, puddles[0].y) >= 30+puddles[0].radius ),
+                          Condition((u) => units["tank2"].willpower < 50 && puddles.length > 0 && distanceFromUnitToXY("tank2", puddles[0].x, puddles[0].y) >= 30+puddles[0].radius ),
                           Named("Move to Puddle", Action((u) => {
                             u.goals = [{ x: puddles[0].x, y: puddles[0].y, weight: 1 }];
                             return { status: "running" };
                           }))
                         ]),
                         Sequence([
-                          Condition((u) => units["tank2"].willpower < 30 && puddles.length > 0 && distanceFromUnitToXY("tank2", puddles[0].x, puddles[0].y) <= 30+puddles[0].radius ),
+                          Condition((u) => units["tank2"].willpower < 50 && puddles.length > 0 && distanceFromUnitToXY("tank2", puddles[0].x, puddles[0].y) <= 30+puddles[0].radius ),
                           Named("Cast Consume Amber", Action((u) => {
                             u.goals = [];
                             u.velocityX = 0;
                             u.velocityY = 0;
                             puddles.shift();
+                            blackBoard.consumeAmber += 1;
+                            console.log(`consume amber: ${blackBoard.consumeAmber}`);
                             u.willpower += blackBoard.phase == 3 ? 50 : 20;
                             return { status: "casting" };
                           }))
@@ -376,6 +407,7 @@ const units = {
     "boss": {
                         name: "Amber-Shaper Un'sok",
                         active: false,
+                        spawnTime: -1,
                         team: 2,
                         x: canvasElement.clientWidth /2 ,
                         y: canvasElement.clientHeight - 100,
@@ -385,7 +417,10 @@ const units = {
                         centerX: 50,
                         centerY: 50,
                         speed: 3.2,
-                        debuffs: [],
+                        debuffs: [{ name: "Destabilize", icon: newImage("./images/as.jpg"), lastApply: 0, duration: 15, count: 17, 
+                                dmgEffect: (toUnit, fromUnit, baseAmount) => {
+                                    return baseAmount * (1 + 0.1 * (toUnit.debuffs.find(d => d.name === "Destabilize")?.count || 1));
+                                }  }],
                         casting: -1,
                         spells: [
                             { name: "Reshape Life", lastCast: startTime-35000, cooldown: 48, castTime: 2, interruptible: false },
@@ -397,19 +432,32 @@ const units = {
                         behavior: function() {
                             return Selector([
                                 Sequence([
-                                    Condition((u) => u.casting == -1 && (Date.now() - u.spells[1].lastCast) >= (u.spells[1].cooldown * 1000)),
+                                    Condition((u) => blackBoard.phase != 3 && u.casting == -1 && (Date.now() - u.spells[1].lastCast) >= (u.spells[1].cooldown * 1000)),
                                     Named("Casting Amber Scalpel", Action((u) => {
                                         u.casting = 1;
                                         u.spells[u.casting].lastCast = Date.now();
                                         setTimeout(() => {  
-                                                            const numPuddles = Math.round(randomBellCurve(3,9,1.3));
+                                                            const numPuddles = Math.round(randomBellCurve(3,9,1.1));
+                                                            const time = Date.now();
                                                             console.log(numPuddles);
-                                                            for (let i = 0; i<numPuddles; i++){
+                                                            blackBoard.puddles += numPuddles;
+                                                            for (let i = 0; i < numPuddles; i++) {
+                                                                setTimeout(()=> {
+                                                                    const puddle = { ...units["amberPuddle"] }
+                                                                    console.log(`puddle Spawning: ${Date.now()}`)
+                                                                    
+                                                                    puddle.x = Math.round(Math.random()*400)-200 + units["amberPuddle"].x;
+                                                                    puddle.y = Math.round(Math.random()*250)-125 + units["amberPuddle"].y;
+                                                                    puddle.spawnTime = Date.now();
+                                                                    puddles.push(puddle);
+                                                                }, randomBellCurve(8000,20000,1));
+                                                            }
+                                                            /* for (let i = 0; i<numPuddles; i++){
                                                                 puddles.push({ ...units["amberPuddle"] });
                                                                 puddles[puddles.length-1].x = Math.round(Math.random()*400)-200 + units["amberPuddle"].x;
                                                                 puddles[puddles.length-1].y = Math.round(Math.random()*250)-125 + units["amberPuddle"].y;
-                                                            }
-                                                           console.log(puddles.length);
+                                                            } */
+                                                           console.log(`total puddles: ${blackBoard.puddles}`);
                                                             u.casting = -1;
                                                         }, u.spells[u.casting].castTime * 1000);
                                         return { status: "casting" };
@@ -469,6 +517,7 @@ const units = {
     "monstrosity":  {
                         name: "Amber Monstrosity",
                         active: false,
+                        spawnTime: -1,
                         team: 2,
                         x: canvasElement.clientWidth /2 + 330,
                         y: canvasElement.clientHeight - 100,
@@ -523,6 +572,8 @@ const units = {
                     },
     "amberPuddle": {
                         name: "amber",
+                        active: true,
+                        spawnTime: startTime,
                         x: canvasElement.clientWidth / 2,
                         y: canvasElement.clientHeight * 0.8,
                         velocityX: 0,
@@ -576,8 +627,16 @@ function gameStartInit(){
     clearButtons();
 
     // reset spell CD's on boss.
-    units["boss"].spells[0].lastCast = startTime - 35000
-    units["boss"].spells[1].lastCast = startTime - 40000
+    units["boss"].spells[0].lastCast = startTime - 15000;
+    units["boss"].spells[1].lastCast = startTime - 20000;
+    const numPuddles = Math.round(randomBellCurve(5,8,1.1));;
+    for (let i = 0; i<numPuddles; i++){
+        puddles.push({ ...units["amberPuddle"] });
+        puddles[puddles.length-1].x = Math.round(Math.random()*400)-200 + units["amberPuddle"].x;
+        puddles[puddles.length-1].y = Math.round(Math.random()*250)-125 + units["amberPuddle"].y;
+        const spawnTime = randomBellCurve(startTime-30000, startTime+10000, 0.25);
+        puddles[puddles.length-1].spawnTime = spawnTime;
+    }
 
     setInterval(triggerEvents,200);
     draw();
@@ -1205,6 +1264,8 @@ function doAction(id) {
                 puddles.shift();
                 player.willpower += blackBoard.phase < 3 ? 20 : 50;
                 player.willpower = player.willpower > 100 ? 100 : player.willpower;
+                blackBoard.consumeAmber += 1;
+                console.log(`consume amber: ${blackBoard.consumeAmber}`);
             }
             break;
         case "break":
