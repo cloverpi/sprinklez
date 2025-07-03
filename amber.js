@@ -23,13 +23,13 @@ const blackBoard = {
     end: {win: false, loss: false}, //w/e
     puddles: 0,
     consumeAmber: 0,
+    selfExplosions: 0,
 }
 const gameEvents = {
     convertToAmber: {
         condition: () => units["redPlayer"].amber && units["redPlayer"].image != units["redPlayer"].monstrosityImage,
         action: (time) => { units["redPlayer"].image = units["redPlayer"].monstrosityImage;
                         units["redPlayer"].willpower = 100;
-                        units["redPlayer"].spells[0].lastCast = time;
                         const breakButton = document.getElementById("break");
                         let wpInterval;
                         wpInterval = setInterval( (player) => {
@@ -44,7 +44,7 @@ const gameEvents = {
     convertTankToAmber: {
         condition: () => units["tank2"].amber && units["tank2"].image != units["tank2"].monstrosityImage,
         action: (time) => { units["tank2"].image = units["tank2"].monstrosityImage;
-                        units["tank2"].willpower = 100;
+                        units["tank2"].willpower = 100; //cheat to get him to consume sooner
                         units["tank2"].spells[0].lastCast = time;
                         let wpInterval;
                         let count = 0;
@@ -56,7 +56,7 @@ const gameEvents = {
                                 tank.willpower -= 8;
                                 count = 0;
                             }
-                            console.log(`Tank WP: ${tank.willpower}`)
+                            // console.log(`Tank WP: ${tank.willpower}`);
                          }, 1000, units["tank2"]);
         },
         endon: () => false,
@@ -117,7 +117,7 @@ const gameEvents = {
     },
     monstrosityRaidDamage: {
         condition: (time) => units["monstrosity"].active &&  time-startTime >= 15000,
-        action: () => { damageUnit(units["monstrosity"], "Raid", 250000);
+        action: () => { damageUnit(units["monstrosity"], "Raid", 200000);
                         units["monstrosity"].hp = units["monstrosity"].hp < 0 ? 0 : units["monstrosity"].hp},
         endon: () => units["monstrosity"].hp < 0,
     },
@@ -135,9 +135,9 @@ const gameEvents = {
                         const p = units["redPlayer"];
                         const percenthp = p.hp/p.maxhp;
                         if (percenthp > 0.23) {
-                            damageUnit(p, "Raid", 1950);
+                            damageUnit(p, "Raid", 2100);
                         } else {
-                            damageUnit(p, "Raid", 550);
+                            damageUnit(p, "Raid", 450);
                         }
                     },
         endon: () => false,
@@ -193,8 +193,21 @@ const gameEvents = {
                                     
                                     puddle.x = Math.round(Math.random()*400)-200 + units["amberPuddle"].x;
                                     puddle.y = Math.round(Math.random()*250)-125 + units["amberPuddle"].y;
-                                    puddle.spawnTime = Date.now();
-                                    puddles.push(puddle);
+                                    console.log(units["monstrosity"].hp/units["monstrosity"].maxhp);
+                                    if (units["monstrosity"].active && units["monstrosity"].hp/units["monstrosity"].maxhp < 0.10) {
+                                        console.log('trying to spawn p3 amber');
+                                        const puddleInterval = setInterval(()=>{
+                                            if ( !units["monstrosity"].active ) {
+                                                clearInterval(puddleInterval);
+                                                puddle.spawnTime = Date.now();
+                                                puddles.push(puddle);
+                                            }
+                                        },randomBellCurve(1000,5000,0.75));
+                                    } else {
+                                        console.log('spawning normal amber');
+                                        puddle.spawnTime = Date.now();
+                                        puddles.push(puddle);
+                                    }
                                 }, randomBellCurve(8000,20000,0.75));
                             }
                         }
@@ -239,6 +252,8 @@ const units = {
                                         u.casting = 0;
                                         u.spells[u.casting].lastCast = Date.now();
                                         setTimeout(() => {  if (u.casting != -1) {
+                                                                blackBoard.selfExplosions += 1
+                                                                if (blackBoard.selfExplosions > 2) blackBoard["end"].loss = true;
                                                                 console.log("KAAAABOOOOOOM");
                                                                 u.casting = -1
                                                             };
@@ -346,21 +361,21 @@ const units = {
                         //   }))
                         // ]),
                         Sequence([
-                          Condition((u) => units["tank2"].willpower < 50 && puddles.length > 0 && distanceFromUnitToXY("tank2", puddles[0].x, puddles[0].y) >= 30+puddles[0].radius ),
+                          Condition((u) => units["tank2"].willpower < 58 && puddles.length > 0 && distanceFromUnitToXY("tank2", puddles[0].x, puddles[0].y) >= 30+puddles[0].radius ),
                           Named("Move to Puddle", Action((u) => {
                             u.goals = [{ x: puddles[0].x, y: puddles[0].y, weight: 1 }];
                             return { status: "running" };
                           }))
                         ]),
                         Sequence([
-                          Condition((u) => units["tank2"].willpower < 50 && puddles.length > 0 && distanceFromUnitToXY("tank2", puddles[0].x, puddles[0].y) <= 30+puddles[0].radius ),
+                          Condition((u) => units["tank2"].willpower < 58 && puddles.length > 0 && distanceFromUnitToXY("tank2", puddles[0].x, puddles[0].y) <= 30+puddles[0].radius ),
                           Named("Cast Consume Amber", Action((u) => {
                             u.goals = [];
                             u.velocityX = 0;
                             u.velocityY = 0;
                             puddles.shift();
                             blackBoard.consumeAmber += 1;
-                            console.log(`consume amber: ${blackBoard.consumeAmber}`);
+                            // console.log(`consume amber: ${blackBoard.consumeAmber}`);
                             u.willpower += blackBoard.phase == 3 ? 50 : 20;
                             return { status: "casting" };
                           }))
@@ -437,14 +452,14 @@ const units = {
                                         u.casting = 1;
                                         u.spells[u.casting].lastCast = Date.now();
                                         setTimeout(() => {  
-                                                            const numPuddles = Math.round(randomBellCurve(3,9,1.1));
+                                                            const numPuddles = Math.round(randomBellCurve(4,6,1.1));
                                                             const time = Date.now();
-                                                            console.log(numPuddles);
+                                                            // console.log(numPuddles);
                                                             blackBoard.puddles += numPuddles;
                                                             for (let i = 0; i < numPuddles; i++) {
                                                                 setTimeout(()=> {
                                                                     const puddle = { ...units["amberPuddle"] }
-                                                                    console.log(`puddle Spawning: ${Date.now()}`)
+                                                                    // console.log(`puddle Spawning: ${Date.now()}`)
                                                                     
                                                                     puddle.x = Math.round(Math.random()*400)-200 + units["amberPuddle"].x;
                                                                     puddle.y = Math.round(Math.random()*250)-125 + units["amberPuddle"].y;
@@ -457,7 +472,7 @@ const units = {
                                                                 puddles[puddles.length-1].x = Math.round(Math.random()*400)-200 + units["amberPuddle"].x;
                                                                 puddles[puddles.length-1].y = Math.round(Math.random()*250)-125 + units["amberPuddle"].y;
                                                             } */
-                                                           console.log(`total puddles: ${blackBoard.puddles}`);
+                                                        //    console.log(`total puddles: ${blackBoard.puddles}`);
                                                             u.casting = -1;
                                                         }, u.spells[u.casting].castTime * 1000);
                                         return { status: "casting" };
@@ -483,6 +498,7 @@ const units = {
                                                             // units["redPlayer"].amber = true;
                                                             const target = !units["tank2"].amber ? units["tank2"] : units["redPlayer"]
                                                             target.amber = true;
+                                                            units["redPlayer"].spells[0].lastCast = Date.now();
                                                             u.casting = -1;
                                                         }, u.spells[u.casting].castTime * 1000);
                                         return { status: "casting" };
@@ -543,8 +559,9 @@ const units = {
                                         u.casting = 0;
                                         u.spells[u.casting].lastCast = Date.now();
                                         setTimeout(() => {  
-                                                            if (u.casting != -1) {
+                                                            if (u.casting != -1 && u.active) {
                                                                 console.log("KAAAABOOOOOOM");
+                                                                blackBoard["end"].loss = true;
                                                                 u.casting = -1
                                                             };
                                                         }, u.spells[u.casting].castTime * 1000);
@@ -629,12 +646,12 @@ function gameStartInit(){
     // reset spell CD's on boss.
     units["boss"].spells[0].lastCast = startTime - 15000;
     units["boss"].spells[1].lastCast = startTime - 20000;
-    const numPuddles = Math.round(randomBellCurve(5,8,1.1));;
+    const numPuddles = Math.round(randomBellCurve(5,7,1.1));;
     for (let i = 0; i<numPuddles; i++){
         puddles.push({ ...units["amberPuddle"] });
         puddles[puddles.length-1].x = Math.round(Math.random()*400)-200 + units["amberPuddle"].x;
         puddles[puddles.length-1].y = Math.round(Math.random()*250)-125 + units["amberPuddle"].y;
-        const spawnTime = randomBellCurve(startTime-30000, startTime+10000, 0.25);
+        const spawnTime = randomBellCurve(startTime-30000, startTime+10000, 0.25)+15000;
         puddles[puddles.length-1].spawnTime = spawnTime;
     }
 
@@ -747,6 +764,14 @@ function drawUnitFrames() {
     context.fillStyle ="#111111";
     context.fillText(p.name,playerFrame[0]+55+3,playerFrame[1]+10);
 
+    context.save();
+    context.font = "16px arial";
+    context.textBaseline = "top";
+    context.textAlign = "right";
+    context.fillStyle ="#3FC7EB";
+    context.fillText((pPercenthp*100).toFixed(0),playerFrame[0]+215,playerFrame[1]+10);
+    context.restore();
+
 
     if (p.target == null) return;
     
@@ -774,6 +799,14 @@ function drawUnitFrames() {
     context.textBaseline = "top";
     context.fillStyle ="#111111";
     context.fillText(t.name,targetFrame[0]+55+3,targetFrame[1]+10);
+
+    context.save();
+    context.font = "16px arial";
+    context.textBaseline = "top";
+    context.textAlign = "right";
+    context.fillStyle ="#751212";
+    context.fillText((percenthp*100).toFixed(0),targetFrame[0]+215,targetFrame[1]+10);
+    context.restore();
 
     const currentTime = Date.now();
     for (let i=0; i < t.debuffs.length; i++) {
@@ -806,7 +839,7 @@ function drawUnitFrames() {
 
 function drawFakeBigWigs(time) {
     
-    const deadlyfojjiwigsFrameDimensions = [180, 79];
+    const deadlyfojjiwigsFrameDimensions = [180, 98];
     const deadlyfojjiwigsFrameLeftCorner = [width-25-deadlyfojjiwigsFrameDimensions[0], 25];
     const deadlyfojjiwigsBarDimensions = [deadlyfojjiwigsFrameDimensions[0]-4, 16];
     
@@ -887,6 +920,13 @@ function drawCastBars(time){
                 context.fillStyle ="#AAAAAA";
                 context.fillText(unit.name,castBarFrameLeftCorner[0]+2,castBarFrameLeftCorner[1]+6);
 
+                context.save();
+                context.font = "10px arial";
+                context.textBaseline = "top";
+                context.fillStyle ="#AAAAAA";
+                context.fillText(spell.name,castBarFrameLeftCorner[0]+2,castBarFrameLeftCorner[1]+20+6);
+                context.restore()
+
                 context.font = "12px arial";
                 context.textBaseline = "top";
                 context.fillStyle ="#AAAAAA";
@@ -936,7 +976,7 @@ function precomputeCrackPaths() {
   const ringSpacing = 135;
 
   const edges = [
-    { x: width / 2, y: 0 },             // Top
+    { x: width / 2, y: 0 },                 // Top
     { x: width / 2, y: gameHeight },        // Bottom
     { x: 0, y: gameHeight / 2 },            // Left
     { x: width, y: gameHeight / 2 },        // Right
