@@ -16,6 +16,8 @@ const UPDATEFREQ = 16.67;
 let lastUpdate = Date.now();
 let startTime = Date.now();
 const meleeRange = 20;
+const maxWiggle = 12 * Math.PI / 180; 
+const wiggleAmount = 1 * Math.PI / 180;
 
 const blackBoard = {
     phase: 1,
@@ -234,6 +236,8 @@ const units = {
                     radius: 40,
                     centerX: 40,
                     centerY: 40,
+                    rotation: 0,
+                    rotationDirection: 0,
                     hp: 420000,
                     maxhp: 420000,
                     willpower: 100,
@@ -278,6 +282,8 @@ const units = {
                     centerX: 40,
                     centerY: 40,
                     speed: 3,
+                    rotation: 0,
+                    rotationDirection: 0,
                     active: true,
                     spawnTime: startTime,
                     target: undefined,
@@ -333,6 +339,8 @@ const units = {
                     centerX: 40,
                     centerY: 40,
                     speed: 3,
+                    rotation: 0,
+                    rotationDirection: 0,
                     debuffs:[],
                     casting: -1,
                     spells: [
@@ -432,6 +440,8 @@ const units = {
                         centerX: 50,
                         centerY: 50,
                         speed: 3.2,
+                        rotation: 0,
+                        rotationDirection: 0,
                         debuffs: [{ name: "Destabilize", icon: newImage("./images/as.jpg"), lastApply: 0, duration: 15, count: 17, 
                                 dmgEffect: (toUnit, fromUnit, baseAmount) => {
                                     return baseAmount * (1 + 0.1 * (toUnit.debuffs.find(d => d.name === "Destabilize")?.count || 1));
@@ -543,6 +553,8 @@ const units = {
                         centerX: 60,
                         centerY: 60,
                         speed: 3.2,
+                        rotation: 0,
+                        rotationDirection: 0,
                         debuffs: [],
                         casting: -1,
                         spells: [
@@ -674,8 +686,8 @@ function draw() {
         drawGameBackground();
         
         drawObject(units["tank"]);
-        drawObject(units["tank2"]);
         drawEnemies();
+        drawObject(units["tank2"]);
         drawObject(units["redPlayer"]);
 
         drawUnitFrames();
@@ -1037,13 +1049,22 @@ function drawPuddles() {
 }
 
 function drawObject(object) {
+    context.save();
+
+    context.translate(object.x, object.y);
+    if (object.rotation) {
+        context.rotate(object.rotation);
+    }
+
     context.drawImage(
         object.image,
-        object.x - object.centerX,
-        object.y - object.centerY,
+        -object.centerX,
+        -object.centerY,
         object.radius * 2,
         object.radius * 2
     );
+
+    context.restore();
     // context.beginPath();
     // context.arc(object.x, object.y, 3, 0, 2 * Math.PI);
     // context.fillStyle = 'red';
@@ -1093,6 +1114,15 @@ function stayOnScreen(object, bounce) {
 function move(object) {
     object.x += object.velocityX;
     object.y += object.velocityY;
+
+    if (object.velocityX == 0 && object.velocityY == 0) { object.rotation = 0; return }
+
+    if (object.rotation == 0) object.rotationDirection = Math.sign(object.velocityX) || 1;
+    object.rotation += object.rotationDirection * wiggleAmount;
+    if ( Math.abs(object.rotation) >= maxWiggle ) {
+        object.rotation = (Math.abs(object.rotation) / object.rotation) * maxWiggle;
+        object.rotationDirection *= -1;
+    }
 }
 
 function applyDebuffDamageModifiers(toUnit, fromUnit, baseAmount) {
