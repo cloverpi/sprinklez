@@ -1,7 +1,7 @@
 import * as ai from './ai.js';
 import { win, loss } from './endscreen.js';
 import { howToPlayInit, drawHowToPlay } from './howto.js';
-import { newImage } from './commonui.js'
+import { newImage, newAudio, AudioManager } from './commonui.js'
 import { createButton, clearButtons, buttonDraw, simulateClick  } from './button.js';
 
 const { Named, Selector, Sequence, Condition, Action, inRange, unitInRange, applyVelocityFromGoals, performAttack } = ai
@@ -16,8 +16,20 @@ const UPDATEFREQ = 16.67;
 let lastUpdate = Date.now();
 let startTime = Date.now();
 const meleeRange = 20;
-const maxWiggle = 12 * Math.PI / 180; 
-const wiggleAmount = 1 * Math.PI / 180;
+const maxWiggle = 8 * Math.PI / 180; 
+const wiggleAmount = 0.8 * Math.PI / 180;
+
+const music = [
+    newAudio("sounds/music/1.mp3", 0.3),
+    newAudio("sounds/music/4.mp3", 0.3),
+    newAudio("sounds/music/3.mp3", 0.3),
+    newAudio("sounds/music/2.mp3", 0.2), 
+];
+
+const ambience = [
+    newAudio("sounds/ambience/1.ogg", 0.15),
+    newAudio("sounds/ambience/2.ogg", 0.15),
+];
 
 const blackBoard = {
     phase: 1,
@@ -32,6 +44,9 @@ const gameEvents = {
         condition: () => units["redPlayer"].amber && units["redPlayer"].image != units["redPlayer"].monstrosityImage,
         action: (time) => { units["redPlayer"].image = units["redPlayer"].monstrosityImage;
                         units["redPlayer"].willpower = 100;
+                        toggleActionBars();
+                        units["redPlayer"].sound.playing = false;
+                        units["redPlayer"].sound = units["redPlayer"].monstrositySound;
                         const breakButton = document.getElementById("break");
                         let wpInterval;
                         wpInterval = setInterval( (player) => {
@@ -58,7 +73,6 @@ const gameEvents = {
                                 tank.willpower -= 8;
                                 count = 0;
                             }
-                            // console.log(`Tank WP: ${tank.willpower}`);
                          }, 1000, units["tank2"]);
         },
         endon: () => false,
@@ -87,6 +101,7 @@ const gameEvents = {
                         const debuffIndex = units["boss"].debuffs.findIndex( (d) =>  d.name === "Destabilize");
                         units["boss"].debuffs[debuffIndex].count = 17;
                         units["boss"].debuffs[debuffIndex].lastApply = time;
+                        AudioManager.play(units["boss"].spawnSound);
                      },
         endon: () => true,
     },
@@ -98,6 +113,7 @@ const gameEvents = {
                         units["tank"].target = units["monstrosity"],
                         units["monstrosity"].target = units["tank"],
                         blackBoard.phase = 2
+                        AudioManager.play(units["monstrosity"].spawnSound);
                     },
         endon: () => true,
     },
@@ -109,7 +125,10 @@ const gameEvents = {
     },
     monstrosityDead: {
         condition: () => (!!units["monstrosity"].active && units["monstrosity"].hp <= 0),
-        action: () => {units["monstrosity"].active = false; blackBoard.phase = 3},
+        action: () => {
+            units["monstrosity"].active = false; 
+            blackBoard.phase = 3; 
+            AudioManager.play(units["monstrosity"].deathSound) },
         endon: () => true
     },
     bossDead: {
@@ -245,7 +264,8 @@ const units = {
                     debuffs:[],
                     casting: -1,
                     spells: [
-                                { name: "Amber Explosion (YOU)", lastCast: -1, cooldown: 13, castTime: 2, interruptible: false }
+                                { name: "Amber Explosion(YOU)", lastCast: -1, cooldown: 13, castTime: 2, interruptible: false },
+                                { name: "Frostbolt", lastCast: -1, cooldown: 0, castTime: 2, interruptible: false, exclude: true, sound: {precast: newAudio('sounds/redPlayer/prefrost.ogg', 0.2), cast: newAudio('sounds/redPlayer/frost.ogg', 0.2), hit: newAudio('sounds/redPlayer/frosthit.ogg', 0.2) } },
                             ],
                     target: undefined,
                     behavior: function() {
@@ -270,6 +290,31 @@ const units = {
                     image: newImage("images/raider.webp"),
                     raiderImage: newImage("images/raider.webp"),
                     monstrosityImage: newImage("images/amberraider.webp"),
+                    sound: {
+
+                    },
+                    raiderSound: {
+                        audio: [
+                            newAudio("sounds/redPlayer/walk1.ogg", 0.2, 1.1),
+                            newAudio("sounds/redPlayer/walk2.ogg", 0.2, 1.1),
+                            newAudio("sounds/redPlayer/walk3.ogg", 0.2, 1.1),
+                            newAudio("sounds/redPlayer/walk4.ogg", 0.2, 1.1),
+                            newAudio("sounds/redPlayer/walk5.ogg", 0.2, 1.1),
+                        ],
+                        playingIndex: 1,
+                        playing: false,
+                    },
+                    monstrositySound: {
+                        audio: [
+                            newAudio("sounds/redPlayer/amber1.ogg", 0.06, 1.4),
+                            newAudio("sounds/redPlayer/amber2.ogg", 0.06, 1.4),
+                            newAudio("sounds/redPlayer/amber3.ogg", 0.06, 1.4),
+                            newAudio("sounds/redPlayer/amber4.ogg", 0.06, 1.4),
+                            newAudio("sounds/redPlayer/amber5.ogg", 0.06, 1.4),
+                        ],
+                        playingIndex: 1,
+                        playing: false,
+                    },
                 },
     "tank": {
                     name: "Donald",
@@ -305,18 +350,6 @@ const units = {
                             return { status: "running" };
                           }))
                         ]),
-                        // Sequence([
-                        //   Condition((u) =>
-                        //     units["boss"].active &&
-                        //     units["monstrosity"].active &&
-                        //     unitInRange(u, units["boss"], meleeRange) &&
-                        //     unitInRange(u, units["monstrosity"], meleeRange)
-                        //   ),
-                        //   Named("Move to Destination", Action((u) => {
-                        //     u.goals = [{ x: 550, y: 450, weight: 1 }];
-                        //     return { status: "running" };
-                        //   }))
-                        // ]),
                         Named("Idle", Action((u) => {
                           u.goals = [];
                           u.velocityX = 0;
@@ -352,22 +385,20 @@ const units = {
                     image: newImage("images/tank.webp"),
                     raiderImage: newImage("images/tank.webp"),
                     monstrosityImage: newImage("images/ambertank.webp"),
+                    sound: {
+                        audio: [
+                            newAudio("sounds/redPlayer/amber1.ogg", 0.01, 1.4),
+                            newAudio("sounds/redPlayer/amber2.ogg", 0.01, 1.4),
+                            newAudio("sounds/redPlayer/amber3.ogg", 0.01, 1.4),
+                            newAudio("sounds/redPlayer/amber4.ogg", 0.01, 1.4),
+                            newAudio("sounds/redPlayer/amber5.ogg", 0.01, 1.4),
+                        ],
+                        playingIndex: 1,
+                        playing: false,
+                    },
                     hp: 520000,
                     behavior: function() {
                         return Selector([
-                        //                             Sequence([
-                        //   Condition((u) =>  {
-                        //         if (blackBoard.phase == 3) return false;
-                        //         if (puddles.length == 0) return false;
-                        //         puddles.sort((a,b) => distanceFromUnitToXY("tank", a.x, a.y) - distanceFromUnitToXY("tank", b.x, b.y));
-                        //         console.log(distanceFromUnitToXY("tank", puddles[0].x, puddles[0].y) <= 30+puddles[0].radius)
-                        //         return distanceFromUnitToXY("tank", puddles[0].x, puddles[0].y) >= 30+puddles[0].radius;
-                        //   }),
-                        //   Named("Move to Puddle", Action((u) => {
-                        //     u.goals = [{ x: puddles[0].x, y: puddles[0].y, weight: 1 }];
-                        //     return { status: "running" };
-                        //   }))
-                        // ]),
                         Sequence([
                           Condition((u) => units["tank2"].willpower < 58 && puddles.length > 0 && distanceFromUnitToXY("tank2", puddles[0].x, puddles[0].y) >= 30+puddles[0].radius ),
                           Named("Move to Puddle", Action((u) => {
@@ -383,7 +414,6 @@ const units = {
                             u.velocityY = 0;
                             puddles.shift();
                             blackBoard.consumeAmber += 1;
-                            // console.log(`consume amber: ${blackBoard.consumeAmber}`);
                             u.willpower += blackBoard.phase == 3 ? 50 : 20;
                             return { status: "casting" };
                           }))
@@ -454,6 +484,7 @@ const units = {
                         hp: 1000000000,
                         maxhp: 1000000000,
                         image: newImage("images/amber-shaper.png"),
+                        spawnSound: newAudio('sounds/unsok/spawn.ogg', 0.50),
                         behavior: function() {
                             return Selector([
                                 Sequence([
@@ -464,12 +495,10 @@ const units = {
                                         setTimeout(() => {  
                                                             const numPuddles = Math.round(randomBellCurve(4,6,1.1));
                                                             const time = Date.now();
-                                                            // console.log(numPuddles);
                                                             blackBoard.puddles += numPuddles;
                                                             for (let i = 0; i < numPuddles; i++) {
                                                                 setTimeout(()=> {
                                                                     const puddle = { ...units["amberPuddle"] }
-                                                                    // console.log(`puddle Spawning: ${Date.now()}`)
                                                                     
                                                                     puddle.x = Math.round(Math.random()*400)-200 + units["amberPuddle"].x;
                                                                     puddle.y = Math.round(Math.random()*250)-125 + units["amberPuddle"].y;
@@ -477,28 +506,11 @@ const units = {
                                                                     puddles.push(puddle);
                                                                 }, randomBellCurve(8000,20000,1));
                                                             }
-                                                            /* for (let i = 0; i<numPuddles; i++){
-                                                                puddles.push({ ...units["amberPuddle"] });
-                                                                puddles[puddles.length-1].x = Math.round(Math.random()*400)-200 + units["amberPuddle"].x;
-                                                                puddles[puddles.length-1].y = Math.round(Math.random()*250)-125 + units["amberPuddle"].y;
-                                                            } */
-                                                        //    console.log(`total puddles: ${blackBoard.puddles}`);
                                                             u.casting = -1;
                                                         }, u.spells[u.casting].castTime * 1000);
                                         return { status: "casting" };
                                     }))
                                 ]),
-                                /* Sequence([
-                                    Condition((u) => !units["tank2"].amber && u.casting == -1 && (Date.now() - u.spells[0].lastCast) >= (u.spells[0].cooldown * 1000)),
-                                    Named("Casting Reshape Life", Action((u) => {
-                                        u.casting = 0;
-                                        u.spells[u.casting].lastCast = Date.now();
-                                        setTimeout(() => {  units["tank2"].amber = true; 
-                                                            u.casting = -1;
-                                                        }, u.spells[u.casting].castTime * 1000);
-                                        return { status: "casting" };
-                                    }))
-                                ]), */
                                 Sequence([
                                     Condition((u) => (!units["redPlayer"].amber || !units["tank2"]) && u.casting == -1 && (Date.now() - u.spells[0].lastCast) >= (u.spells[0].cooldown * 1000)),
                                     Named("Casting Reshape Life", Action((u) => {
@@ -509,6 +521,8 @@ const units = {
                                                             const target = !units["tank2"].amber ? units["tank2"] : units["redPlayer"]
                                                             target.amber = true;
                                                             units["redPlayer"].spells[0].lastCast = Date.now();
+                                                            units["redPlayer"].casting = -1;
+                                                            AudioManager.stop(units["redPlayer"].spells[1].sound.precast);
                                                             u.casting = -1;
                                                         }, u.spells[u.casting].castTime * 1000);
                                         return { status: "casting" };
@@ -557,12 +571,25 @@ const units = {
                         rotationDirection: 0,
                         debuffs: [],
                         casting: -1,
+                        sound: {
+                        audio: [
+                            newAudio("sounds/redPlayer/amber1.ogg", 0.1, 1.4),
+                            newAudio("sounds/redPlayer/amber2.ogg", 0.1, 1.4),
+                            newAudio("sounds/redPlayer/amber3.ogg", 0.1, 1.4),
+                            newAudio("sounds/redPlayer/amber4.ogg", 0.1, 1.4),
+                            newAudio("sounds/redPlayer/amber5.ogg", 0.1, 1.4),
+                        ],
+                        playingIndex: 1,
+                        playing: false,
+                    },
                         spells: [
                             { name: "Amber Explosion", lastCast: 0, cooldown: 50, castTime: 2, interruptible: true }
                         ],
                         hp: 327000000,
                         maxhp: 327000000,
                         image: newImage("images/amber.webp"),
+                        spawnSound: newAudio('sounds/monstrosity/spawn.ogg', 0.15),
+                        deathSound: newAudio('sounds/unsok/p3.ogg', 0.15),
                         behavior: function() {
                             return Selector([
                                 Sequence([
@@ -631,6 +658,31 @@ let spellKeys ={
     "4": {id: "break", time: 0} ,
 }
 
+function playAmbience() {
+    
+    function play(){
+        for (const a of ambience) {
+            a.loop = true;
+            a.play();
+        }
+    }
+    play();
+}
+
+function playMusic() {
+    let musicIndex = 0;
+
+    function play(){
+        AudioManager.play(music[musicIndex], ()=>{ 
+            musicIndex++;
+            if (musicIndex >= music.length) musicIndex = 0;
+            console.log(`after music index: ${musicIndex}`);
+            play();
+        });
+    }
+    play();
+}
+
 function randomBellCurve(min, max, skew) {
   let u = 0, v = 0;
   while(u === 0) u = Math.random()
@@ -655,6 +707,9 @@ function gameStartInit(){
     lastUpdate = Date.now();
     clearButtons();
 
+    //player fussing.
+    units["redPlayer"].sound = units["redPlayer"].raiderSound;
+
     // reset spell CD's on boss.
     units["boss"].spells[0].lastCast = startTime - 15000;
     units["boss"].spells[1].lastCast = startTime - 20000;
@@ -669,12 +724,13 @@ function gameStartInit(){
 
     setInterval(triggerEvents,200);
     draw();
+    playMusic();
+    playAmbience();
 }
 
-
 function draw() {
-    if (blackBoard["end"].win) win();
-    if (blackBoard["end"].loss) loss();
+    if (blackBoard["end"].win) {AudioManager.stopAll(); win()};
+    if (blackBoard["end"].loss) {AudioManager.stopAll(); loss()};
     if (blackBoard["end"].win || blackBoard["end"].loss) return;
     
     
@@ -872,26 +928,28 @@ function drawFakeBigWigs(time) {
             if ( unit.active && unit.spells != undefined && unit.spells.length > 0 ) {
                 const { spells } = unit;
                 for (const spell of spells) {
-                    spellIndex++;
-                    let timeLeft = ((spell.cooldown*1000)-(time - spell.lastCast))/1000;
-                    timeLeft = timeLeft < 0 ? 0 : timeLeft;
-                    const percentLeft = timeLeft / (spell.cooldown);
-                    const barWidth = deadlyfojjiwigsBarDimensions[0] * percentLeft;
+                    if (!spell.exclude) {
+                        spellIndex++;
+                        let timeLeft = ((spell.cooldown*1000)-(time - spell.lastCast))/1000;
+                        timeLeft = timeLeft < 0 ? 0 : timeLeft;
+                        const percentLeft = timeLeft / (spell.cooldown);
+                        const barWidth = deadlyfojjiwigsBarDimensions[0] * percentLeft;
 
-                    context.beginPath();
-                    context.fillStyle = (timeLeft < 5) ? 'rgb(245, 49, 0)' : 'rgb(0, 245, 0)';
-                    context.rect(deadlyfojjiwigsFrameLeftCorner[0]+2, deadlyfojjiwigsFrameLeftCorner[1]+((20)*spellIndex), barWidth, deadlyfojjiwigsBarDimensions[1]);
-                    context.fill();
+                        context.beginPath();
+                        context.fillStyle = (timeLeft < 5) ? 'rgb(245, 49, 0)' : 'rgb(0, 245, 0)';
+                        context.rect(deadlyfojjiwigsFrameLeftCorner[0]+2, deadlyfojjiwigsFrameLeftCorner[1]+((20)*spellIndex), barWidth, deadlyfojjiwigsBarDimensions[1]);
+                        context.fill();
 
-                    context.font = "10px arial";
-                    context.textBaseline = "top";
-                    context.fillStyle ="#4444CC";
-                    context.fillText(spell.name,deadlyfojjiwigsFrameLeftCorner[0]+4,deadlyfojjiwigsFrameLeftCorner[1]+((20)*spellIndex)+3);
+                        context.font = "10px arial";
+                        context.textBaseline = "top";
+                        context.fillStyle ="#4444CC";
+                        context.fillText(spell.name,deadlyfojjiwigsFrameLeftCorner[0]+4,deadlyfojjiwigsFrameLeftCorner[1]+((20)*spellIndex)+3);
 
-                    context.font = "10px arial";
-                    context.textBaseline = "top";
-                    context.fillStyle ="#4444CC";
-                    context.fillText(timeLeft.toFixed(1),deadlyfojjiwigsFrameLeftCorner[0]+deadlyfojjiwigsBarDimensions[0]-20,deadlyfojjiwigsFrameLeftCorner[1]+((20)*spellIndex)+3);
+                        context.font = "10px arial";
+                        context.textBaseline = "top";
+                        context.fillStyle ="#4444CC";
+                        context.fillText(timeLeft.toFixed(1),deadlyfojjiwigsFrameLeftCorner[0]+deadlyfojjiwigsBarDimensions[0]-20,deadlyfojjiwigsFrameLeftCorner[1]+((20)*spellIndex)+3);
+                    }
                 }
             }
         }
@@ -1065,10 +1123,6 @@ function drawObject(object) {
     );
 
     context.restore();
-    // context.beginPath();
-    // context.arc(object.x, object.y, 3, 0, 2 * Math.PI);
-    // context.fillStyle = 'red';
-    // context.fill();
 }
 
 function stayOnScreen(object, bounce) {
@@ -1111,11 +1165,30 @@ function stayOnScreen(object, bounce) {
     }
 }
 
+function playWalkSound(object) {
+    const { sound } = object;
+    if ( sound == undefined ) return;
+    const { audio } = sound;
+
+    if ( sound.playing == false ) {
+        if ( sound.playingIndex == 0 ) {
+            sound.playingIndex = Math.random() < 0.85 ? 1 : Math.round(Math.random()*( audio.length - 3 ) + 2);
+        } else if (sound.playingIndex == 1) {
+            sound.playingIndex = Math.random() < 0.85 ? 0 : Math.round(Math.random()*( audio.length - 3 ) + 2);
+        } else {
+            sound.playingIndex = Math.floor(Math.random()*2);
+        }
+        sound.playing = true;
+        AudioManager.play(audio[sound.playingIndex], () => {sound.playing = false}) ;
+    }
+}
+
 function move(object) {
     object.x += object.velocityX;
     object.y += object.velocityY;
 
     if (object.velocityX == 0 && object.velocityY == 0) { object.rotation = 0; return }
+    playWalkSound(object);
 
     if (object.rotation == 0) object.rotationDirection = Math.sign(object.velocityX) || 1;
     object.rotation += object.rotationDirection * wiggleAmount;
@@ -1175,10 +1248,24 @@ function update(time) {
 
     stayOnScreen(units["redPlayer"], false);
     move(units["redPlayer"]);
+    if (units["redPlayer"].velocityX || units["redPlayer"].velocityY) {
+        units["redPlayer"].casting = -1;
+        AudioManager.stop(units["redPlayer"].spells[1].sound.precast);
+    }
     move(units["tank"]);
     move(units["tank2"]);
     move(units["boss"]);
     move(units["monstrosity"]);
+}
+
+function updateUnitAI() {
+    for (const u of Object.keys(units)) {
+        const unit = units[u];
+        if (unit.active && unit.behavior != undefined) {
+            unit.behavior()
+            if (u != "redPlayer") applyVelocityFromGoals(unit)
+        }
+    }
 }
 
 function distanceFromUnitToXY(unit1Key, x, y) {
@@ -1227,8 +1314,12 @@ document.addEventListener("keypress", event => {
 
 document.addEventListener("keypress", event => {
     if (typeof spellKeys[event.key] === 'undefined') return;
-    document.querySelector(`#${spellKeys[event.key].id}`).click()
-
+    const button = document.querySelector(`#${spellKeys[event.key].id}`);
+    if (units["redPlayer"].amber) { 
+        button.click();
+    } else {
+        frostBolt();
+    }
 });
 
 document.addEventListener('contextmenu', event => {
@@ -1237,9 +1328,16 @@ document.addEventListener('contextmenu', event => {
     return false;
 });
 
-document.querySelectorAll(".ability").forEach(button => {
+
+document.querySelector('#actionbar').querySelectorAll(".ability").forEach(button => {
     button.addEventListener("click", () => {
         startCooldown(button);
+    });
+});
+
+document.querySelector('#actionbarFrostbolt').querySelectorAll(".ability").forEach(button => {
+    button.addEventListener("click", () => {
+        frostBolt(button);
     });
 });
 
@@ -1253,6 +1351,112 @@ document.addEventListener("mousemove", event => {
     blackBoard.mouseY = relY > gameHeight ? gameHeight : relY;
 });
 
+function toggleActionBars(){
+    const actionbar = document.querySelector("#actionbar");
+    const actionbarfrostbolt = document.querySelector("#actionbarFrostbolt")
+    if ( actionbar.className.includes("invisible") ) {
+        actionbarfrostbolt.classList.add("invisible");
+        actionbar.classList.remove("invisible");
+    } else {
+        actionbar.classList.add("invisible");
+        actionbarfrostbolt.classList.remove("invisible");
+    }
+}
+
+const abilitySounds = {
+    "amberstrike1": newAudio("sounds/redPlayer/as1.ogg",0.4),
+    "amberstrike2": newAudio("sounds/redPlayer/as2.ogg",0.4),
+    "struggle": newAudio("sounds/redPlayer/struggle.ogg",0.1),
+    "consume": newAudio("sounds/redPlayer/consume.ogg",0.3),
+    // "break": newAudio("sounds/redPlayer/break.ogg",0.5),  //no sound?
+}
+
+function canDoAction(id) {
+    let bCanDoAction = false;
+    const player = units["redPlayer"];
+    const target = units[player.target];
+    switch (id) {
+        case "amberstrike":
+            if (target != undefined && target.active) bCanDoAction = unitInRange(player, target, meleeRange);
+            break;
+        case "struggle":
+            bCanDoAction = (player.willpower >= 8);
+            break;
+        case "consume":
+            if (puddles.length > 0) { 
+                puddles.sort((a,b) => distanceFromUnitToXY("redPlayer", a.x, a.y) - distanceFromUnitToXY("redPlayer", b.x, b.y));
+                const puddle = puddles[0];
+                bCanDoAction = (distanceFromUnitToXY("redPlayer", puddle.x, puddle.y) <= 30+puddle.radius);
+            }
+            break;
+        case "break":
+            bCanDoAction = ((player.hp / player.maxhp) <= 0.2);
+            break;
+        case "frostbolt":
+            if (target != undefined && target.active) {
+                if (player.velocityX == 0 && player.velocityY == 0 ) bCanDoAction = true;
+            }
+            break;
+    }
+    return bCanDoAction;
+}
+
+function doAction(id) {
+    const player = units["redPlayer"];
+    const target = units[player.target];
+    
+    switch (id) {
+        case "amberstrike":
+            const currentTime = Date.now();
+            damageUnit(target, player, 332499);
+            const debuffIndex = target.debuffs.findIndex( (d) =>  d.name === "Destabilize");
+            if ( debuffIndex != -1 ) {
+                target.debuffs[debuffIndex].count += 1
+                target.debuffs[debuffIndex].lastApply = currentTime;
+            } else {
+                target.debuffs.push({ name: "Destabilize", icon: newImage("./images/as.jpg"), lastApply: currentTime, duration: 15, count: 1, 
+                                dmgEffect: (toUnit, fromUnit, baseAmount) => {
+                                    return baseAmount * (1 + 0.1 * (toUnit.debuffs.find(d => d.name === "Destabilize")?.count || 1));
+                                }  })
+            }
+            if (target.casting != undefined && target.casting != -1 && target.spells[target.casting].interruptible) target.casting = -1;
+            AudioManager.play(abilitySounds["amberstrike1"]);
+            AudioManager.play(abilitySounds["amberstrike2"]);
+            break;
+        case "struggle":
+            player.casting = -1;
+            player.willpower -= 8;
+            AudioManager.play(abilitySounds["struggle"]);
+            break;
+        case "consume":
+            if (puddles.length > 0) { 
+                puddles.shift();
+                player.willpower += blackBoard.phase < 3 ? 20 : 50;
+                player.willpower = player.willpower > 100 ? 100 : player.willpower;
+                blackBoard.consumeAmber += 1;
+                AudioManager.play(abilitySounds["consume"]);
+            }
+            break;
+        case "break":
+            player.amber = false;
+            player.casting = -1;
+            toggleActionBars();
+            break;
+        case "frostbolt":
+            player.casting = 1;
+            player.spells[1].lastCast = Date.now();
+            AudioManager.play(player.spells[1].sound.precast);
+            setTimeout(() => {  if (player.casting != -1) {
+                                    AudioManager.play(player.spells[1].sound.cast);
+                                    AudioManager.stop(player.spells[1].sound.precast);
+                                    damageUnit(target, player, 51000);
+                                    player.casting = -1
+                                    setTimeout(() => { AudioManager.play(player.spells[1].sound.hit); }, 1000)
+                                };
+                            }, player.spells[1].castTime * 1000);
+            break;
+    }
+}
 
 function polarToCartesian(cx, cy, r, angle) {
     const rad = (angle - 90) * Math.PI / 180;
@@ -1280,79 +1484,7 @@ function describeSector(cx, cy, r, startAngle, endAngle) {
     ].join(" ");
 }
 
-function canDoAction(id) {
-    let bCanDoAction = false;
-    const player = units["redPlayer"];
-    const target = units[player.target];
-    switch (id) {
-        case "amberstrike":
-            if (target != undefined && target.active) bCanDoAction = unitInRange(player, target, meleeRange);
-            break;
-        case "struggle":
-            bCanDoAction = player.willpower >= 8;
-            break;
-        case "consume":
-            if (puddles.length > 0) { 
-                puddles.sort((a,b) => distanceFromUnitToXY("redPlayer", a.x, a.y) - distanceFromUnitToXY("redPlayer", b.x, b.y));
-                const puddle = puddles[0];
-                bCanDoAction = distanceFromUnitToXY("redPlayer", puddle.x, puddle.y) <= 30+puddle.radius;
-            }
-            break;
-        case "break":
-            bCanDoAction = (player.hp / player.maxhp) <= 0.2;
-            break;
-    }
-    return bCanDoAction;
-}
-
-function doAction(id) {
-    const player = units["redPlayer"];
-    const target = units[player.target];
-    
-    switch (id) {
-        case "amberstrike":
-            const currentTime = Date.now();
-            damageUnit(target, player, 332499);
-            const debuffIndex = target.debuffs.findIndex( (d) =>  d.name === "Destabilize");
-            if ( debuffIndex != -1 ) {
-                target.debuffs[debuffIndex].count += 1
-                target.debuffs[debuffIndex].lastApply = currentTime;
-            } else {
-                target.debuffs.push({ name: "Destabilize", icon: newImage("./images/as.jpg"), lastApply: currentTime, duration: 15, count: 1, 
-                                dmgEffect: (toUnit, fromUnit, baseAmount) => {
-                                    return baseAmount * (1 + 0.1 * (toUnit.debuffs.find(d => d.name === "Destabilize")?.count || 1));
-                                }  })
-            }
-            if (target.casting != undefined && target.casting != -1 && target.spells[target.casting].interruptible) target.casting = -1;
-            break;
-        case "struggle":
-            player.casting = -1;
-            player.willpower -= 8;
-            break;
-        case "consume":
-            if (puddles.length > 0) { 
-                puddles.shift();
-                player.willpower += blackBoard.phase < 3 ? 20 : 50;
-                player.willpower = player.willpower > 100 ? 100 : player.willpower;
-                blackBoard.consumeAmber += 1;
-                console.log(`consume amber: ${blackBoard.consumeAmber}`);
-            }
-            break;
-        case "break":
-            player.amber = false;
-            player.casting = -1;
-            break;
-    }
-}
-
-function startCooldown(button) {
-    if (!units["redPlayer"].amber) return;
-    if (button._cooldownRunning) return;
-    if (button.className.includes("disabled")) return;
-    if (!canDoAction(button.id)) return;
-    button._cooldownRunning = true;
-
-    doAction(button.id);
+function animateButtonCooldown(button){
 
     const path = button.querySelector('.cooldown-fill');
     const text = button.querySelector('.cooldown-text');
@@ -1374,32 +1506,46 @@ function startCooldown(button) {
         const startAngle = 360 * progress;
 
         if (progress < 1) {
-        path.setAttribute("d", describeSector(cx, cy, r, startAngle, endAngle));
+            path.setAttribute("d", describeSector(cx, cy, r, startAngle, endAngle));
 
-        const remaining = ((duration - elapsed) / 1000).toFixed(1);
-        text.textContent = remaining;
+            const remaining = ((duration - elapsed) / 1000).toFixed(1);
+            text.textContent = remaining;
 
-        requestAnimationFrame(animate);
+            requestAnimationFrame(animate);
         } else {
             path.setAttribute("d", "");
             text.style.display = "none";
             button._cooldownRunning = false;
-            }
-    }
-    animate();
-}
-
-function updateUnitAI() {
-    for (const u of Object.keys(units)) {
-        const unit = units[u];
-        if (unit.active && unit.behavior != undefined) {
-            unit.behavior()
-            if (u != "redPlayer") applyVelocityFromGoals(unit)
         }
     }
+    animate();
+
 }
 
-// draw();
+function startCooldown(button) {
+    if (!units["redPlayer"].amber) return;
+    if (button._cooldownRunning) return;
+    if (button.className.includes("disabled")) return;
+    if (!canDoAction(button.id)) return;
+    button._cooldownRunning = true;
+
+    doAction(button.id);
+    animateButtonCooldown(button);
+}
+
+function frostBolt() {
+    const actionbarfrostbolt = document.querySelector("#actionbarFrostbolt");
+    if (actionbarfrostbolt.querySelector(".ability")._cooldownRunning) return;
+    if (units["redPlayer"].amber) return;
+    if (!canDoAction("frostbolt")) return;
+
+    doAction("frostbolt");
+    actionbarfrostbolt.querySelectorAll(".ability").forEach( (button) => {
+            animateButtonCooldown(button);
+            button._cooldownRunning = true;
+        } );
+}
+
+
 howToPlayInit(gameStartInit);
 drawHowToPlay();
-// setInterval(drawHowToPlay, 1000 / 30);

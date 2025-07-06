@@ -16,27 +16,18 @@ h1{
     flex-direction: column;
 }
 
-.button {
-  background-color: #4CAF50;
-  border: none;
-  color: white;
-  padding: 15px 32px;
-  text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 16px;
-  cursor: pointer;
+
+
+canvas {
+  margin-top: 20px;
 }
 
 body {
   background: rgba(2,12,13,255);
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  align-items: center;
-  height: 100vh;
-  margin: 0;
-  flex-wrap: wrap;
+}
+
+.invisible {
+  display: none;
 }
 
 .ability {
@@ -88,12 +79,27 @@ body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  color: #ffffcc; /* pale yellow */
+  color: #ffffcc;
   font-weight: 700;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   font-size: 1.4rem;
   text-shadow: 0 0 4px rgba(0,0,0,0.7);
   pointer-events: none;
   user-select: none;
-  display: none; /* hidden by default */
+  display: none;
+}
+
+.corner-label {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: white;
+  text-shadow: 0 0 3px black, 1px 1px 2px black;
+  /* background: rgba(0, 0, 0, 0.6); */
+  padding: 2px 4px;
+  border-radius: 3px;
+  pointer-events: none;
 }

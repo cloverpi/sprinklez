@@ -10,7 +10,50 @@
             <div>
                 <canvas id="secret" width="800" height="730"></canvas>
             </div>
-            <div>
+            <div id="actionbarFrostbolt">
+                <br>
+                <button id="frostbolt1" class="ability" data-cd="2000">
+                    <img src="images/fb.jpg" alt="Frostbolt" />
+                    <svg class="cooldown-overlay" viewBox="0 0 100 100">
+                    <defs>
+                        <clipPath id="roundedClip">
+                        <rect x="0" y="0" width="100" height="100" rx="12" ry="12" />
+                        </clipPath>
+                    </defs>
+                    <path class="cooldown-fill" d=""></path>
+                    </svg>
+                    <div class="cooldown-text"></div>
+                    <div class="corner-label">1</div>
+                </button>
+
+                <button id="frostbolt2" class="ability" data-cd="2000">
+                    <img src="images/fb.jpg" alt="Frostbolt" />
+                    <svg class="cooldown-overlay" viewBox="0 0 100 100">
+                    <path class="cooldown-fill" d="" clip-path="url(#roundedClip)"></path>
+                    </svg>
+                    <div class="cooldown-text"></div>
+                    <div class="corner-label">2</div>
+                </button>
+
+                <button id="frostbolt3" class="ability" data-cd="2000">
+                    <img src="images/fb.jpg" alt="Frostbolt" />
+                    <svg class="cooldown-overlay" viewBox="0 0 100 100">
+                    <path class="cooldown-fill" d="" clip-path="url(#roundedClip)"></path>
+                    </svg>
+                    <div class="cooldown-text"></div>
+                    <div class="corner-label">3</div>
+                </button>
+
+                <button id="frostbolt4" class="ability" data-cd="2000">
+                    <img src="images/fb.jpg" alt="Frostbolt" />
+                    <svg class="cooldown-overlay" viewBox="0 0 100 100">
+                    <path class="cooldown-fill" d="" clip-path="url(#roundedClip)"></path>
+                    </svg>
+                    <div class="cooldown-text"></div>
+                    <div class="corner-label">4</div>
+                </button>
+            </div>
+            <div id="actionbar" class="invisible">
                 <br>
                 <button id="amberstrike" class="ability" data-cd="6000">
                     <img src="images/as.jpg" alt="Amber Strike" />
@@ -23,6 +66,7 @@
                     <path class="cooldown-fill" d=""></path>
                     </svg>
                     <div class="cooldown-text"></div>
+                    <div class="corner-label">1</div>
                 </button>
 
                 <button id="struggle" class="ability" data-cd="6000">
@@ -31,6 +75,7 @@
                     <path class="cooldown-fill" d="" clip-path="url(#roundedClip)"></path>
                     </svg>
                     <div class="cooldown-text"></div>
+                    <div class="corner-label">2</div>
                 </button>
 
                 <button id="consume" class="ability" data-cd="1500">
@@ -39,6 +84,7 @@
                     <path class="cooldown-fill" d="" clip-path="url(#roundedClip)"></path>
                     </svg>
                     <div class="cooldown-text"></div>
+                    <div class="corner-label">3</div>
                 </button>
 
                 <button id="break" class="ability disabled" data-cd="1500">
@@ -47,10 +93,11 @@
                     <path class="cooldown-fill" d="" clip-path="url(#roundedClip)"></path>
                     </svg>
                     <div class="cooldown-text"></div>
+                    <div class="corner-label">4</div>
                 </button>
             </div>
         </div>
-        <script type="module" src="ai.js?v=1.8"></script>
-        <script type="module" src="amber.js?v=1.8"></script>
+        <script type="module" src="ai.js?v=1.9"></script>
+        <script type="module" src="amber.js?v=1.9"></script>
     </body>
 </html>

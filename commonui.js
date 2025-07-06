@@ -10,6 +10,65 @@ export function newImage(src) {
     return img;
 }
 
+export const AudioManager = (() => {
+    const playing = [];
+
+    function play(audio, onEndCallback) {
+        if (!(audio instanceof Audio)) throw new Error("Not an Audio object.");
+
+        audio.currentTime = 0;
+        audio.play().catch(() => {});
+        playing.push(audio);
+
+        const handleEnded = () => {
+            const index = playing.indexOf(audio);
+            if (index !== -1) playing.splice(index, 1);
+            if (typeof onEndCallback === "function") {
+                onEndCallback(audio);
+            }
+        };
+
+        audio.onended = handleEnded;
+    }
+
+    function stop(audio) {
+        if (!(audio instanceof Audio)) return;
+
+        audio.pause();
+        audio.currentTime = 0;
+
+        const index = playing.indexOf(audio);
+        if (index !== -1) playing.splice(index, 1);
+    }
+
+    function stopAll() {
+        for (const audio of playing) {
+            audio.pause();
+            audio.currentTime = 0;
+        }
+        playing.length = 0;
+    }
+
+    function getPlaying() {
+        return playing.slice();
+    }
+
+    return {
+        play,
+        stop,
+        stopAll,
+        getPlaying
+    };
+})();
+
+export function newAudio(src, vol, pr = 1) {
+    const snd = new Audio(src);
+    // snd.src = src;
+    snd.volume = vol;
+    snd.playbackRate = pr;
+    return snd;
+}
+
 export function roundRect(x, y, w, h, r) {
   context.beginPath();
   context.moveTo(x + r, y);
