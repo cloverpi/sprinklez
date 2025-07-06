@@ -1,4 +1,4 @@
-import { roundRect, drawLegendLine, drawEndScreenHeading, cheeseParagraph, drawEndScreenBackground, drawPatreonButton, drawFooter, newImage } from './commonui.js'
+import { roundRect, drawLegendLine, drawEndScreenHeading, cheeseParagraph, drawEndScreenBackground, drawPatreonButton, drawFooter, newImage, newAudio, AudioManager } from './commonui.js'
 import { createButton, clearButtons, buttonDraw, simulateClick  } from './button.js';
 
 const canvasElement = document.getElementById("secret");
@@ -6,6 +6,8 @@ const context = canvasElement.getContext("2d");
 
 const { width, height } = canvasElement;
 const winImage = newImage("images/wooo2.webp");
+const victorySound = newAudio("sounds/victory.ogg", 0.5);
+const failureSound = newAudio("sounds/failure.ogg", 0.5);
 
 function drawEndScreenImage(colors, onLoadCallback) {
   if (winImage.complete) {
@@ -44,6 +46,7 @@ function drawEndScreenImage(colors, onLoadCallback) {
 }
 
 export function win() {
+  AudioManager.play(victorySound);
   const colors = {
     heading: {
       shadow: "rgba(0,180,255,0.8)",
@@ -132,6 +135,7 @@ export function win() {
 }
 
 export function loss() {
+  AudioManager.play(failureSound);
   const colors = {
     heading: {
       shadow: "rgba(255, 80, 80, 0.8)",

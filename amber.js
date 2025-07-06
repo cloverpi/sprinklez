@@ -237,6 +237,7 @@ const gameEvents = {
     }
 
 }
+let gameEventsTimer;
 
 const puddles = [];
 const precomputedCracks = [];
@@ -663,7 +664,7 @@ function playAmbience() {
     function play(){
         for (const a of ambience) {
             a.loop = true;
-            a.play();
+            AudioManager(a);
         }
     }
     play();
@@ -722,15 +723,23 @@ function gameStartInit(){
         puddles[puddles.length-1].spawnTime = spawnTime;
     }
 
-    setInterval(triggerEvents,200);
+    gameEventsTimer = setInterval(triggerEvents,200);
     draw();
     playMusic();
     playAmbience();
 }
 
 function draw() {
-    if (blackBoard["end"].win) {AudioManager.stopAll(); win()};
-    if (blackBoard["end"].loss) {AudioManager.stopAll(); loss()};
+    if (blackBoard["end"].win) {
+        AudioManager.stopAll();
+        clearInterval(gameEventsTimer);
+        win();
+    };
+    if (blackBoard["end"].loss) {
+        AudioManager.stopAll();
+        clearInterval(gameEventsTimer);
+        loss();
+    };
     if (blackBoard["end"].win || blackBoard["end"].loss) return;
     
     
@@ -1248,7 +1257,7 @@ function update(time) {
 
     stayOnScreen(units["redPlayer"], false);
     move(units["redPlayer"]);
-    if (units["redPlayer"].velocityX || units["redPlayer"].velocityY) {
+    if (!units["redPlayer"].amber && (units["redPlayer"].velocityX || units["redPlayer"].velocityY)) {
         units["redPlayer"].casting = -1;
         AudioManager.stop(units["redPlayer"].spells[1].sound.precast);
     }
