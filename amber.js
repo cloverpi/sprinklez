@@ -47,6 +47,7 @@ const gameEvents = {
                         toggleActionBars();
                         units["redPlayer"].sound.playing = false;
                         units["redPlayer"].sound = units["redPlayer"].monstrositySound;
+                        units["redPlayer"].spells[0].lastCast = time;
                         const breakButton = document.getElementById("break");
                         let wpInterval;
                         wpInterval = setInterval( (player) => {
@@ -142,14 +143,6 @@ const gameEvents = {
                         units["monstrosity"].hp = units["monstrosity"].hp < 0 ? 0 : units["monstrosity"].hp},
         endon: () => units["monstrosity"].hp < 0,
     },
-    amberCarapaceAdd: {
-        condition: () => units["boss"].active && blackBoard.phase == 2,
-        action: () => units["boss"].debuffs.push(
-                            { name: "Amber Carapace", lastApply: 0, duration: 0, icon: newImage("./images/ac.jpg"), count: 1, dmgEffect: (toUnit, fromUnit, baseAmount) => {
-                                return baseAmount * 0.01;} }
-                            ),
-        endon: () => true,
-    },
     playerAmberDamageTaken: {
         condition: () => units["redPlayer"].amber && blackBoard.phase != 3,
         action: () => {
@@ -179,6 +172,14 @@ const gameEvents = {
     playerDead: {
         condition: () => units["redPlayer"].active && (units["redPlayer"].hp <= 0 || units["redPlayer"].willpower <= 0),
         action: () => {units["redPlayer"].active = false, blackBoard["end"].loss = true},
+        endon: () => true,
+    },
+    amberCarapaceAdd: {
+        condition: () => units["boss"].active && blackBoard.phase == 2,
+        action: () => units["boss"].debuffs.push(
+                            { name: "Amber Carapace", lastApply: 0, duration: 0, icon: newImage("./images/ac.jpg"), count: 1, dmgEffect: (toUnit, fromUnit, baseAmount) => {
+                                return baseAmount * 0.01;} }
+                            ),
         endon: () => true,
     },
     amberCarapaceRemove: {
@@ -234,11 +235,66 @@ const gameEvents = {
                         }
                     },
         endon: () => false,
-    }
-
+    },
+    tutorialAmberStrike: {
+        condition: (time) => (tutorialMode && units["redPlayer"].amber),
+        action: (time) => {
+                    raidWarning = "Press (1) Amber-Strike on Amber Monstrosity on CD.";
+                    AudioManager.play(raidWarningSound);
+                    setTimeout( ()=> raidWarning = "", 4000);
+                    },
+        endon: () => true,
+    },
+    tutorialStruggleForControl: {
+        condition: () => ( tutorialMode && units["redPlayer"].amber && units["redPlayer"].casting == 0 ),
+        action: (time) => {
+                    raidWarning = "Press (2) Struggle For Control to interrupt: Amber Explosion(YOU)";
+                    AudioManager.play(raidWarningSound);
+                    setTimeout( ()=> raidWarning = "", 4000);
+                    },
+        endon: () => true,
+    },
+    tutorialHoldAmberStrike: {
+        condition: (time) => ( tutorialMode && units["redPlayer"].amber && (units["monstrosity"].spells[0].cooldown*1000)-(time-units["monstrosity"].spells[0].lastCast) >= 12000 && (units["monstrosity"].spells[0].cooldown*1000)-(time-units["monstrosity"].spells[0].lastCast) <= 13000),
+        action: (time) => {
+                    raidWarning = "Hold off on (1) Amber-Strike until Amber Explosion has 6 - 5s on CD.";
+                    AudioManager.play(raidWarningSound);
+                    },
+        endon: () => true,
+    },
+    tutorialInterruptAmberExplosion: {
+        condition: () => ( tutorialMode && units["redPlayer"].amber && units["monstrosity"].casting == 0 ),
+        action: () => {
+                    raidWarning = "Press (1) Amber-Strike to interrupt Amber-Monstrosity.";
+                    AudioManager.play(raidWarningSound);
+                    setTimeout( ()=> raidWarning = "", 4000);
+                    },
+        endon: () => true,
+    },
+    tutorialBreakFree: {
+        condition: () => ( tutorialMode && units["redPlayer"].amber && (units["redPlayer"].hp/units["redPlayer"].maxhp) <= 0.2 ),
+        action: () => {
+                    raidWarning = "Refresh (1) Amber-Strike and immediately (4) Break Free.";
+                    AudioManager.play(raidWarningSound);
+                    setTimeout( ()=> raidWarning = "", 4000);
+                    },
+        endon: () => true,
+    },
+    tutorialConsumeAmber: {
+        condition: () => ( tutorialMode && units["redPlayer"].amber && blackBoard.phase == 3 ),
+        action: () => {
+                    raidWarning = "Press (3) Consume Amber when near an Amber Pool with willpower less than 50%.";
+                    AudioManager.play(raidWarningSound);
+                    setTimeout( ()=> raidWarning = "", 4000);
+                    },
+        endon: () => true,
+    },
 }
 let gameEventsTimer;
 
+let tutorialMode = true;
+let raidWarning = "";
+const raidWarningSound = newAudio("sounds/raidwarning.ogg", 0.5);
 const puddles = [];
 const precomputedCracks = [];
 const floorBox = [[48,0],[272,0],[288,32],[320,48],[320,272],[288,288],[272,320],[48,320],[32,288],[0,272],[0,48],[32,32]];
@@ -276,11 +332,12 @@ const units = {
                                     Named("Casting Amber Explosion (YOU)", Action((u) => {
                                         u.casting = 0;
                                         u.spells[u.casting].lastCast = Date.now();
-                                        setTimeout(() => {  if (u.casting != -1) {
+                                        setTimeout(() => {  if (u.casting == 0) {
                                                                 blackBoard.selfExplosions += 1
                                                                 if (blackBoard.selfExplosions > 2) blackBoard["end"].loss = true;
                                                                 console.log("KAAAABOOOOOOM");
                                                                 u.casting = -1
+                                                                console.log('clearing cast: Amber Explosion');
                                                             };
                                                         }, u.spells[u.casting].castTime * 1000);
                                         return { status: "casting" };
@@ -307,11 +364,11 @@ const units = {
                     },
                     monstrositySound: {
                         audio: [
-                            newAudio("sounds/redPlayer/amber1.ogg", 0.06, 1.4),
-                            newAudio("sounds/redPlayer/amber2.ogg", 0.06, 1.4),
-                            newAudio("sounds/redPlayer/amber3.ogg", 0.06, 1.4),
-                            newAudio("sounds/redPlayer/amber4.ogg", 0.06, 1.4),
-                            newAudio("sounds/redPlayer/amber5.ogg", 0.06, 1.4),
+                            newAudio("sounds/redPlayer/amber1.ogg", 0.15, 1.4),
+                            newAudio("sounds/redPlayer/amber2.ogg", 0.15, 1.4),
+                            newAudio("sounds/redPlayer/amber3.ogg", 0.15, 1.4),
+                            newAudio("sounds/redPlayer/amber4.ogg", 0.15, 1.4),
+                            newAudio("sounds/redPlayer/amber5.ogg", 0.15, 1.4),
                         ],
                         playingIndex: 1,
                         playing: false,
@@ -574,11 +631,11 @@ const units = {
                         casting: -1,
                         sound: {
                         audio: [
-                            newAudio("sounds/redPlayer/amber1.ogg", 0.1, 1.4),
-                            newAudio("sounds/redPlayer/amber2.ogg", 0.1, 1.4),
-                            newAudio("sounds/redPlayer/amber3.ogg", 0.1, 1.4),
-                            newAudio("sounds/redPlayer/amber4.ogg", 0.1, 1.4),
-                            newAudio("sounds/redPlayer/amber5.ogg", 0.1, 1.4),
+                            newAudio("sounds/redPlayer/amber1.ogg", 0.2, 1.4),
+                            newAudio("sounds/redPlayer/amber2.ogg", 0.2, 1.4),
+                            newAudio("sounds/redPlayer/amber3.ogg", 0.2, 1.4),
+                            newAudio("sounds/redPlayer/amber4.ogg", 0.2, 1.4),
+                            newAudio("sounds/redPlayer/amber5.ogg", 0.2, 1.4),
                         ],
                         playingIndex: 1,
                         playing: false,
@@ -599,7 +656,7 @@ const units = {
                                         u.casting = 0;
                                         u.spells[u.casting].lastCast = Date.now();
                                         setTimeout(() => {  
-                                                            if (u.casting != -1 && u.active) {
+                                                            if (u.casting == 0 && u.active) {
                                                                 console.log("KAAAABOOOOOOM");
                                                                 blackBoard["end"].loss = true;
                                                                 u.casting = -1
@@ -664,7 +721,7 @@ function playAmbience() {
     function play(){
         for (const a of ambience) {
             a.loop = true;
-            AudioManager(a);
+            AudioManager.play(a);
         }
     }
     play();
@@ -758,6 +815,7 @@ function draw() {
         drawUnitFrames();
         drawFakeBigWigs(currentTime);
         drawCastBars(currentTime);
+        drawRaidWarning();
     }
     
     requestAnimationFrame(draw);
@@ -771,6 +829,7 @@ function drawGameBackground() {
     context.fillStyle = gradient;
     context.rect(0, 0, width, gameHeight);
     context.fill();
+    context.closePath();
 
     drawCracks(context);
     drawCenter(context);
@@ -781,6 +840,8 @@ function drawGameBackground() {
     context.strokeStyle = "#fff";
     context.rect(0, 0, width, gameHeight);
     context.stroke();
+    context.closePath();
+
 
     drawPuddles();
 }
@@ -1014,6 +1075,24 @@ function drawCastBars(time){
             }
         }
     }
+}
+
+function drawRaidWarning() {
+    if ( raidWarning == "" ) return;
+
+
+    context.save();
+    context.beginPath();
+    context.font = "20px arial";
+    context.textBaseline = "top";
+    context.textAlign = "center";
+    context.fillStyle ="#DD1111";
+    context.strokeStyle ="#111111";
+    context.lineWidth = 2;
+    context.strokeText(raidWarning, width/2, (height/2)-100);
+    context.fillText(raidWarning, width/2, (height/2)-100);
+    context.closePath();
+    context.restore();
 }
 
 function drawCenter(ctx){
@@ -1259,6 +1338,7 @@ function update(time) {
     move(units["redPlayer"]);
     if (!units["redPlayer"].amber && (units["redPlayer"].velocityX || units["redPlayer"].velocityY)) {
         units["redPlayer"].casting = -1;
+        console.log('clearing cast: Movement');
         AudioManager.stop(units["redPlayer"].spells[1].sound.precast);
     }
     move(units["tank"]);
@@ -1399,7 +1479,7 @@ function canDoAction(id) {
             }
             break;
         case "break":
-            bCanDoAction = ((player.hp / player.maxhp) <= 0.2);
+            bCanDoAction = player.amber && ((player.hp / player.maxhp) <= 0.2);
             break;
         case "frostbolt":
             if (target != undefined && target.active) {
@@ -1455,7 +1535,7 @@ function doAction(id) {
             player.casting = 1;
             player.spells[1].lastCast = Date.now();
             AudioManager.play(player.spells[1].sound.precast);
-            setTimeout(() => {  if (player.casting != -1) {
+            setTimeout(() => {  if (player.casting == 1) {
                                     AudioManager.play(player.spells[1].sound.cast);
                                     AudioManager.stop(player.spells[1].sound.precast);
                                     damageUnit(target, player, 51000);
@@ -1543,6 +1623,7 @@ function startCooldown(button) {
 }
 
 function frostBolt() {
+    console.log('frostbolt');
     const actionbarfrostbolt = document.querySelector("#actionbarFrostbolt");
     if (actionbarfrostbolt.querySelector(".ability")._cooldownRunning) return;
     if (units["redPlayer"].amber) return;

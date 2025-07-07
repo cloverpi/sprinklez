@@ -127,7 +127,7 @@ export function win() {
     text: "Go Again",
     color: "#b0002c",
     textColor: "#fff",
-    onClick: () => console.log("Go Again clicked!"),
+    onClick: () => window.location.reload(),
   });
 
   buttonDraw();
@@ -209,7 +209,7 @@ export function loss() {
     text: "Try Again",
     color: "#b0002c",
     textColor: "#fff",
-    onClick: () => console.log("Try Again clicked!"),
+    onClick: () => window.location.reload(),
   });
 
   buttonDraw();
