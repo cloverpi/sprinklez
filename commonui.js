@@ -3,6 +3,7 @@ const context = canvasElement.getContext("2d");
 
 const { width, height } = canvasElement;
 const patreonLogo = newImage("https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/Patreon_logo.svg/541px-Patreon_logo.svg.png?20140225173435");
+let patreonArea;
 
 export function newImage(src) {
     const img = new Image();
@@ -260,8 +261,22 @@ export function drawPatreonButton(x, y, width = 225, height = 40, colors = {}, o
   context.fillStyle = text;
   context.shadowColor = "transparent";
   context.fillText("Support on Patreon", x + 12 + logoWidth + 10, y + height / 2);
-
   context.restore();
+
+  canvasElement.addEventListener("click", (e) => {
+    const rect = canvasElement.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+
+    if (
+      clickX >= x &&
+      clickX <= x + width &&
+      clickY >= y &&
+      clickY <= y + height
+    ) {
+      window.open("https://patreon.com/CloverPi", "_blank");
+    }
+  })
 
   return { x, y, width, height };
 }
