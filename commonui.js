@@ -276,7 +276,21 @@ export function drawPatreonButton(x, y, width = 225, height = 40, colors = {}, o
     ) {
       window.open("https://patreon.com/CloverPi", "_blank");
     }
-  })
+  });
+
+  canvasElement.addEventListener("mousemove", (e)=> {
+  const rect = canvasElement.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+
+  const inside =
+      mouseX >= x &&
+      mouseX <= x + width &&
+      mouseY >= y &&
+      mouseY <= y + height;
+
+    canvasElement.style.cursor = inside ? "pointer" : "default";
+  });
 
   return { x, y, width, height };
 }

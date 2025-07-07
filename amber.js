@@ -293,7 +293,7 @@ const gameEvents = {
     tutorialBreakFree: {
         condition: () => ( tutorialMode && units["redPlayer"].amber && (units["redPlayer"].hp/units["redPlayer"].maxhp) <= 0.2 ),
         action: () => {
-                    const warning = "Refresh (1) Amber-Strike and immediately (4) Break Free.";
+                    const warning = "Refresh (1) Amber-Strike if possible, and immediately (4) Break Free.";
                     raidWarning = warning;
                     AudioManager.play(raidWarningSound);
                     setTimeout( ()=> {if (raidWarning == warning) raidWarning = ""}, 4000);
