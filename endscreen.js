@@ -1,4 +1,4 @@
-import { roundRect, drawLegendLine, drawEndScreenHeading, cheeseParagraph, drawEndScreenBackground, drawPatreonButton, drawFooter, newImage, newAudio, AudioManager } from './commonui.js'
+import { roundRect, drawLegendLine, drawEndScreenHeading, cheeseParagraph, drawEndScreenBackground, drawPatreonButton, drawFooter, newImage, newAudio, AudioManager, drawCopyButton } from './commonui.js'
 import { createButton, clearButtons, buttonDraw, simulateClick  } from './button.js';
 
 const canvasElement = document.getElementById("secret");
@@ -45,7 +45,7 @@ function drawEndScreenImage(colors, onLoadCallback) {
   }
 }
 
-export function win() {
+export function win(stats) {
   AudioManager.play(victorySound);
   const colors = {
     heading: {
@@ -100,15 +100,37 @@ export function win() {
     width: 580,
   };
 
-  drawEndScreenHeading("Congratulations!", paragraphBox.x + paragraphBox.width / 2, 120, colors.heading);
+  drawEndScreenHeading("Congratulations!", paragraphBox.x + paragraphBox.width / 2, 60, colors.heading);
 
   
-  const boxInfo = cheeseParagraph("Your raidleader wants to sire your children, and your parents finally love you. Jeff from accounting, who never liked anything, openly wept, and Amber-Shaper Sticky-Socks respawned just to ask for your autograph.", colors.paragraph);
-  drawLegendLine(boxInfo.boxX, boxInfo.boxY, boxInfo.boxWidth, boxInfo.boxHeight, colors.legend);
+  const boxInfo = cheeseParagraph(
+    "Your raidleader wants to sire your children, and your parents finally love you. Jeff from accounting, who never liked anything, openly wept, and Amber-Shaper Sticky-Socks respawned just to ask for your autograph.", 
+    colors.paragraph, 200, 160, );
+
+
+  console.log(encodeURIComponent(window.btoa(JSON.stringify(stats))));
+
+  const winReason = 
+  `AmberStrike Total: ${stats.amberStrike}\n
+  AmberStrike Monstrosity: ${stats.amberStrikeMonstrosity}\n
+  AmberStrike Un'Sok: ${stats.amberStrikeUnsok}\n
+  Self Interrupts : ${stats.selfInterrupt}\n
+  Monstrosity Interrupts: ${stats.selfInterrupt}
+  `
+  const boxStatsInfo = cheeseParagraph(
+    winReason,
+    colors.paragraph, boxInfo.boxX, boxInfo.boxY + boxInfo.boxHeight + 20, boxInfo.boxWidth, 160
+  );
+
+  const drawCopy = drawCopyButton(boxStatsInfo.boxX+450, boxStatsInfo.boxY+50, `https://cloverpi.github.io/sprinklez/verify.html?win=${encodeURIComponent(window.btoa(JSON.stringify(stats)))}`);
+
+  drawCopy();
+
+  drawLegendLine(boxStatsInfo.boxX, boxStatsInfo.boxY-20, boxStatsInfo.boxWidth, boxStatsInfo.boxHeight, colors.legend);
 
   clearButtons();
 
-  const buttonY = boxInfo.boxY + boxInfo.boxHeight + 140;
+  const buttonY = boxStatsInfo.boxY + boxStatsInfo.boxHeight + 100;
   createButton({
     x: 300,
     y: buttonY,
@@ -134,7 +156,7 @@ export function win() {
   drawFooter(colors.footer, colors.patreon, win);
 }
 
-export function loss() {
+export function loss(stats) {
   AudioManager.play(failureSound);
   const colors = {
     heading: {
@@ -196,13 +218,33 @@ export function loss() {
     colors.paragraph
   );
 
-  drawLegendLine(boxInfo.boxX, boxInfo.boxY, boxInfo.boxWidth, boxInfo.boxHeight, colors.legend);
+  let failReason = "You Failed!";
+  switch (stats.failReason) {
+    case "selfExplosion":
+      failReason = "You blew up more than once.";
+      break;
+    case "amberExplosion":
+      failReason = "You allowed the Amber Monstrosity to blow up.";
+      break;
+    case "willpower":
+      failReason = "You ran out of willpower.";
+      break;
+    case "hp":
+      failReason = "You ran out of health.";
+      break;
+  }
+  const boxStatsInfo = cheeseParagraph(
+    failReason,
+    colors.paragraph, boxInfo.boxX, boxInfo.boxY + boxInfo.boxHeight + 10, boxInfo.boxWidth, 60
+  );
+
+  drawLegendLine(boxStatsInfo.boxX, boxStatsInfo.boxY, boxStatsInfo.boxWidth, boxStatsInfo.boxHeight, colors.legend);
 
   clearButtons();
 
-  const buttonY = boxInfo.boxY + boxInfo.boxHeight + 140;
+  const buttonY = boxStatsInfo.boxY + boxStatsInfo.boxHeight + 110;
   createButton({
-    x: 420,
+    x: 410,
     y: buttonY,
     width: 150,
     height: 50,

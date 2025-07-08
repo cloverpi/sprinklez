@@ -51,7 +51,11 @@ const stats = {
     amberExplosion: 0,
     interrupt: 0,
     timePlayed: 0,
+    failReason: "",
+    time: 0,
 }
+const maxExplosion = 1;
+const maxSelfExplosion = 2;
 
 const gameEvents = {
     convertToAmber: {
@@ -185,7 +189,15 @@ const gameEvents = {
     },
     playerDead: {
         condition: () => units["redPlayer"].active && (units["redPlayer"].hp <= 0 || units["redPlayer"].willpower <= 0),
-        action: () => {units["redPlayer"].active = false, blackBoard["end"].loss = true},
+        action: () => {
+            units["redPlayer"].active = false;
+            blackBoard["end"].loss = true;
+            if ( units["redPlayer"].willpower <= 0 ) {
+                stats.failReason = "willpower";
+            } else {
+                stats.failReason = "hp";
+            }
+        },
         endon: () => true,
     },
     amberCarapaceAdd: {
@@ -366,7 +378,10 @@ const units = {
                                         setTimeout(() => {  if (u.casting == 0) {
                                                                 blackBoard.selfExplosion += 1;
                                                                 stats.selfExplosion += 1;
-                                                                if (blackBoard.selfExplosion > 2) blackBoard["end"].loss = true;
+                                                                if (blackBoard.selfExplosion >= maxSelfExplosion) {
+                                                                    blackBoard["end"].loss = true;
+                                                                    stats.failReason = "selfExplosion";
+                                                                }
                                                                 console.log("KAAAABOOOOOOM");
                                                                 u.casting = -1
                                                                 console.log('clearing cast: Amber Explosion');
@@ -691,6 +706,7 @@ const units = {
                                                             if (u.casting == 0 && u.active) {
                                                                 console.log("KAAAABOOOOOOM");
                                                                 stats.amberExplosion += 1;
+                                                                stats.failReason = "amberExplosion";
                                                                 blackBoard["end"].loss = true;
                                                                 u.casting = -1
                                                             };
@@ -823,16 +839,16 @@ function draw() {
     if (blackBoard["end"].win) {
         AudioManager.stopAll();
         clearInterval(gameEventsTimer);
-        console.log(stats);
         stats.timePlayed = Date.now()-startTime;
-        win();
+        stats.time = Date.now();
+        win(stats);
     };
     if (blackBoard["end"].loss) {
         AudioManager.stopAll();
         clearInterval(gameEventsTimer);
-        console.log(stats);
         stats.timePlayed = Date.now()-startTime;
-        loss();
+        stats.time = Date.now();
+        loss(stats);
     };
     if (blackBoard["end"].win || blackBoard["end"].loss) return;
     
@@ -1546,7 +1562,7 @@ function doAction(id) {
                                 }  })
             }
             if ( target.casting == 0 && target.name == "Amber Monstrosity" ) stats.interrupt += 1;
-            if ( target.name == "Amber Monstosity" ) stats.amberStrikeMonstrosity += 1;
+            if ( target.name == "Amber Monstrosity" ) stats.amberStrikeMonstrosity += 1;
             if ( target.name == "Amber-Shaper Un'sok" ) stats.amberStrikeUnsok += 1;
 
             if (target.casting != undefined && target.casting != -1 && target.spells[target.casting].interruptible) target.casting = -1;

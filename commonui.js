@@ -84,11 +84,149 @@ export function roundRect(x, y, w, h, r) {
   context.closePath();
 }
 
+export function drawCopyButton(x, y, textToCopy, callback) {
+  const width = 48;
+  const height = 64;
+  const padding = 25; // extra space for glow/text
+  const textOffset = 20;
+
+  const bgX = x - padding;
+  const bgY = y - padding;
+  const bgW = width + padding * 2;
+  const bgH = height + padding * 2 + textOffset;
+
+  const notchSize = 10;
+  const fauxLines = 3;
+
+  let isHovered = false;
+  let pressUntil = 0;
+  let copiedUntil = 0;
+
+  // Background snapshot
+  const background = context.getImageData(bgX, bgY, bgW, bgH);
+
+  // Draw the button and surrounding state
+  function draw() {
+    const now = Date.now();
+    const pressOffset = now < pressUntil ? 2 : 0;
+
+    // Restore background
+    context.putImageData(background, bgX, bgY);
+
+    // BACK PAGE
+    context.save();
+    context.fillStyle = "#d0d0d0";
+    context.strokeStyle = "#aaa";
+    context.lineWidth = 1;
+    context.translate(2, -2);
+    context.fillRect(x, y, width, height);
+    context.strokeRect(x, y, width, height);
+    context.restore();
+
+    // FRONT PAGE
+    context.save();
+    context.translate(0, pressOffset);
+    context.fillStyle = "#ffffff";
+    context.strokeStyle = isHovered ? "#00b4ff" : "#bbb";
+    context.lineWidth = 2;
+
+    context.beginPath();
+    context.moveTo(x, y);
+    context.lineTo(x + width - notchSize, y);
+    context.lineTo(x + width, y + notchSize);
+    context.lineTo(x + width, y + height);
+    context.lineTo(x, y + height);
+    context.closePath();
+    context.fill();
+    context.stroke();
+
+    // Faux text lines
+    context.strokeStyle = "#ccc";
+    context.lineWidth = 1;
+    for (let i = 0; i < fauxLines; i++) {
+      const lineY = y + 10 + i * 10;
+      context.beginPath();
+      context.moveTo(x + 6, lineY);
+      context.lineTo(x + width - 6, lineY);
+      context.stroke();
+    }
+
+    // Icon
+    context.font = "bold 16px 'Segoe UI', sans-serif";
+    context.fillStyle = "#00b4ff";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText("🔗", x + width / 2, y + height / 2 + 8);
+
+    // Short code
+    context.font = "10px 'Segoe UI', sans-serif";
+    context.fillStyle = "#333";
+    context.fillText("/verify", x + width / 2, y + height / 2 + 24);
+
+    // Label text
+    context.font = "12px 'Segoe UI', sans-serif";
+    context.fillStyle = "#00b4ff";
+    context.fillText("Copy Stats URL", x + width / 2, y + height + textOffset);
+
+    // "Link copied!" above button
+    if (now < copiedUntil) {
+      context.font = "bold 14px 'Segoe UI', sans-serif";
+      context.fillStyle = "#00b4ff";
+      context.fillText("Link copied!", x + width / 2, y - 10);
+    }
+
+    context.restore();
+  }
+
+  // Mousemove: detect hover and redraw
+  canvasElement.addEventListener("mousemove", (e) => {
+    const rect = canvasElement.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+
+    const hovering = mx >= x && mx <= x + width && my >= y && my <= y + height;
+    if (hovering !== isHovered) {
+      isHovered = hovering;
+      draw(); // only redraw on hover state change
+    }
+  });
+
+  // Mousedown: press effect
+  canvasElement.addEventListener("mousedown", (e) => {
+    const rect = canvasElement.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const inside = mx >= x && mx <= x + width && my >= y && my <= y + height;
+    if (inside) {
+      pressUntil = Date.now() + 100;
+      draw(); // show pressed state
+    }
+  });
+
+  // Mouseup: copy logic
+  canvasElement.addEventListener("mouseup", (e) => {
+    const rect = canvasElement.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const inside = mx >= x && mx <= x + width && my >= y && my <= y + height;
+    if (inside) {
+      copiedUntil = Date.now() + 2000;
+      navigator.clipboard.writeText(textToCopy);
+      callback?.();
+      draw(); // show "link copied!"
+      setTimeout(()=>draw(), 4000);
+    }
+  });
+
+  return draw;
+}
+
+
 export function drawLegendLine(boxX, boxY, boxWidth, boxHeight, colors) {
   const text = "The legend of Sprinklez will continue...";
   const fontSize = 26;
   const legendX = boxX + boxWidth / 2;
-  const legendY = boxY + boxHeight + 90;
+  const legendY = boxY + boxHeight + 60;
 
   context.save();
   context.font = `italic bold ${fontSize}px 'Segoe UI', Arial`;
@@ -131,36 +269,34 @@ export function drawEndScreenHeading(text, centerX, y, colors) {
   context.restore();
 }
 
-export function cheeseParagraph(text, colors) {
-  const paragraph = text;
-
-  const boxX = 200;
-  const boxY = 240;
-  const boxWidth = 580;
-  const boxHeight = 140;
-
+export function cheeseParagraph(text, colors, boxX = 200, boxY = 240, boxWidth = 580, boxHeight = 140) {
   const paddingY = 20;
   const lineHeight = 26;
-  const maxTextWidth = 300;
+  const maxTextWidth = 500;
 
   context.save();
-  
-  const words = paragraph.split(" ");
+  context.font = "18px 'Segoe UI', Arial";
+
+  const rawLines = text.split("\n");
   const lines = [];
 
-  let currentLine = "";
-  for (let word of words) {
-    const testLine = currentLine ? `${currentLine} ${word}` : word;
-    if (context.measureText(testLine).width > maxTextWidth && currentLine !== "") {
-      lines.push(currentLine);
-      currentLine = word;
-    } else {
-      currentLine = testLine;
-    }
-  }
-  if (currentLine) lines.push(currentLine);
+  for (const rawLine of rawLines) {
+    const words = rawLine.split(" ");
+    let currentLine = "";
 
-  
+    for (const word of words) {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      if (context.measureText(testLine).width > maxTextWidth && currentLine !== "") {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    }
+
+    if (currentLine) lines.push(currentLine);
+  }
+
   context.fillStyle = colors.boxFill;
   roundRect(boxX, boxY, boxWidth, boxHeight, 22);
   context.fill();
@@ -181,7 +317,7 @@ export function cheeseParagraph(text, colors) {
   context.font = "18px 'Segoe UI', Arial";
   context.fillStyle = colors.textFill;
   context.textBaseline = "top";
-   context.textAlign = "center"; 
+  context.textAlign = "center";
   context.shadowColor = colors.textShadow;
   context.shadowBlur = 3;
   context.shadowOffsetX = 1;
