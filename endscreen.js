@@ -123,7 +123,6 @@ export function win(stats) {
   );
 
   const drawCopy = drawCopyButton(boxStatsInfo.boxX+450, boxStatsInfo.boxY+50, `https://cloverpi.github.io/sprinklez/verify.html?win=${encodeURIComponent(window.btoa(JSON.stringify(stats)))}`);
-
   drawCopy();
 
   drawLegendLine(boxStatsInfo.boxX, boxStatsInfo.boxY-20, boxStatsInfo.boxWidth, boxStatsInfo.boxHeight, colors.legend);
@@ -139,7 +138,7 @@ export function win(stats) {
     text: "Join Peak",
     color: "#ff3064",
     textColor: "#fff",
-    onClick: () => console.log("Join Peak clicked!"),
+    onClick: () => window.open("https://discord.com/invite/NKScm9qt97", "_blank"),
   });
   createButton({
     x: 520,
