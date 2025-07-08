@@ -2,7 +2,7 @@ import * as ai from './ai.js';
 import { win, loss } from './endscreen.js';
 import { howToPlayInit, drawHowToPlay } from './howto.js';
 import { newImage, newAudio, AudioManager } from './commonui.js'
-import { createButton, clearButtons, buttonDraw, simulateClick  } from './button.js';
+import { clearButtons } from './button.js';
 
 const { Named, Selector, Sequence, Condition, Action, inRange, unitInRange, applyVelocityFromGoals, performAttack } = ai
 
@@ -828,6 +828,8 @@ function gameStartInit(){
         const spawnTime = randomBellCurve(startTime-30000, startTime+10000, 0.25)+15000;
         puddles[puddles.length-1].spawnTime = spawnTime;
     }
+
+    document.querySelector("#actionbarFrostbolt").classList.remove("invisible");
 
     gameEventsTimer = setInterval(triggerEvents,200);
     draw();

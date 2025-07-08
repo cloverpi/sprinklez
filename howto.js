@@ -1,11 +1,28 @@
 
-import { roundRect, drawLegendLine, drawEndScreenHeading, cheeseParagraph, drawEndScreenBackground, drawPatreonButton, drawFooter, newImage } from './commonui.js'
+import { roundRect, drawEndScreenHeading, drawEndScreenBackground, newImage } from './commonui.js'
 import { createButton, clearButtons, buttonDraw, simulateClick  } from './button.js';
 
 const canvasElement = document.getElementById("secret");
 const context = canvasElement.getContext("2d");
 let hoveredSection = null;
 let hoverInterval = null;
+
+const tabImage = [
+    newImage("./images/keytab.webp"),
+    newImage("./images/as1.jpg"),
+];
+const wasdImage = [
+    newImage("./images/keyw.svg"),
+    newImage("./images/keya.svg"),
+    newImage("./images/keys.svg"),
+    newImage("./images/keyd.svg"),
+];
+const abilityImage = [
+    newImage("./images/as1.jpg"),
+    newImage("./images/sc1.jpg"),
+    newImage("./images/ca1.jpg"),
+    newImage("./images/bf1.jpg"),
+];
 
 const { width, height } = canvasElement;
 const sections = [];
@@ -28,7 +45,20 @@ const colors = {
     }
 };
 
+function imagesLoaded(images) {
+    let unloadedTotal = 0;
+    images.forEach((image)=> {
+        if (!image.complete) {
+            unloadedTotal++;
+            image.onload = () => drawHowToPlay();
+        }
+    });
+    return unloadedTotal == 0;
+}
+
 export function howToPlayInit(onStartCallback) {
+
+
     clearButtons();
     sections.length = 0;
 
@@ -38,35 +68,39 @@ export function howToPlayInit(onStartCallback) {
     let sectionY = 110;
 
     const sectionData = [
-    {
-        label: "Tab Targeting",
-        keys: [{ key: "TAB", wide: true }],
-        baseColor: "#442244"
-    },
-    {
-        label: "WASD Movement",
-        keys: ["W", "A", "S", "D"],
-        baseColor: "#224444"
-    },
-    {
-        label: "Abilities",
-        keys: ["1", "2", "3", "4"],
-        baseColor: "#443322"
-    }
+        {
+            label: "Tab Targeting",
+            keys: [{ key: "TAB", wide: true }],
+            baseColor: "#442244",
+            images: tabImage,
+        },
+        {
+            label: "WASD Movement",
+            keys: ["W", "A", "S", "D"],
+            baseColor: "#224444",
+            images: wasdImage,
+        },
+        {
+            label: "Abilities",
+            keys: ["1", "2", "3", "4"],
+            baseColor: "#443322",
+            images: abilityImage,
+        }
     ];
 
     sectionData.forEach((sec) => {
-    const section = {
-        x: sectionX,
-        y: sectionY,
-        width: sectionWidth,
-        height: sectionHeight,
-        label: sec.label,
-        baseColor: sec.baseColor,
-        imageColor: sec.baseColor,
-        buttons: [],
-        currentIndex: 0
-    };
+        const section = {
+            x: sectionX,
+            y: sectionY,
+            width: sectionWidth,
+            height: sectionHeight,
+            label: sec.label,
+            activeButton: 0,
+            images: sec.images,
+            imageColor: sec.baseColor,
+            buttons: [],
+            currentIndex: 0
+        };
 
     const keys = sec.keys.map(k => (typeof k === 'string' ? { key: k, wide: false } : k));
     let btnX = sectionX + 30;
@@ -74,13 +108,14 @@ export function howToPlayInit(onStartCallback) {
     keys.forEach(entry => {
         const btnWidth = entry.wide ? 140 : 80;
         const btn = createButton({
-        x: btnX,
-        y: sectionY + 60,
-        width: btnWidth,
-        text: entry.key,
-        color: '#242424',
-        textColor: '#fff',
-        onClick: () => {}
+            x: btnX,
+            y: sectionY + 60,
+            width: btnWidth,
+            text: entry.key,
+            color: '#242424',
+            textColor: '#fff',
+            simulationLock: true,
+            onClick: () => {}
         });
         section.buttons.push(btn);
         btnX += btnWidth + 10;
@@ -110,7 +145,10 @@ export function howToPlayInit(onStartCallback) {
 }
 
 export function drawHowToPlay() {
-    console.log("Sections created:", sections.length);
+    if (!imagesLoaded(tabImage)) return;
+    if (!imagesLoaded(wasdImage)) return;
+    if (!imagesLoaded(abilityImage)) return;
+
     context.clearRect(0, 0, canvasElement.width, canvasElement.height);
     drawEndScreenBackground(colors.background);
     drawEndScreenHeading("How to Play", canvasElement.width / 2, 30, colors.heading);
@@ -134,13 +172,7 @@ export function drawHowToPlay() {
 
         const imgX = section.x + section.width - 240;
         const imgY = section.y + 30;
-        context.fillStyle = section.imageColor;
-        roundRect(imgX, imgY, 180, section.height - 60, 12);
-        context.fill();
-        context.fillStyle = "#ccc";
-        context.font = "16px Segoe UI";
-        context.textAlign = "center";
-        context.fillText("Image", imgX + 90, imgY + (section.height - 60) / 2);
+        context.drawImage(section.images[section.currentIndex],imgX+60, imgY-13, 120, 120);
         
     }
     context.restore();
@@ -168,6 +200,7 @@ function handleMouseMove(e) {
 
     if (newHovered !== hoveredSection) {
         hoveredSection = newHovered;
+        if (hoveredSection != null) hoveredSection.currentIndex = 0; 
 
         if (hoverInterval) {
             clearInterval(hoverInterval);
@@ -178,9 +211,10 @@ function handleMouseMove(e) {
             hoverInterval = setInterval(() => {
                 const buttons = hoveredSection.buttons;
                 if (buttons.length > 0) {
-                    const i = hoveredSection.currentIndex % buttons.length;
-                    simulateClick(buttons[i]);
+                    simulateClick(buttons[hoveredSection.currentIndex]);
+                    drawHowToPlay();
                     hoveredSection.currentIndex++;
+                    if (hoveredSection.currentIndex >= buttons.length) hoveredSection.currentIndex = 0;
                 }
             }, 800);
         }

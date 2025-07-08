@@ -1,5 +1,5 @@
-import { roundRect, drawLegendLine, drawEndScreenHeading, cheeseParagraph, drawEndScreenBackground, drawPatreonButton, drawFooter, newImage, newAudio, AudioManager, drawCopyButton } from './commonui.js'
-import { createButton, clearButtons, buttonDraw, simulateClick  } from './button.js';
+import { drawLegendLine, drawEndScreenHeading, cheeseParagraph, drawEndScreenBackground, drawFooter, newImage, newAudio, AudioManager, drawCopyButton } from './commonui.js'
+import { createButton, clearButtons, buttonDraw } from './button.js';
 
 const canvasElement = document.getElementById("secret");
 const context = canvasElement.getContext("2d");

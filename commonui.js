@@ -64,11 +64,28 @@ export const AudioManager = (() => {
 
 export function newAudio(src, vol, pr = 1) {
     const snd = new Audio(src);
-    // snd.src = src;
     snd.volume = vol;
     snd.playbackRate = pr;
     return snd;
 }
+
+export const InputLock = (() => {
+  let lockUntil = 0;
+  function lock(ms = 250) {
+    lockUntil = Date.now() + ms;
+  }
+  function isLocked() {
+    return Date.now() < lockUntil;
+  }
+  function clear() {
+    lockUntil = 0;
+  }
+  return {
+    lock,
+    isLocked,
+    clear
+  }
+})();
 
 export function roundRect(x, y, w, h, r) {
   context.beginPath();
@@ -193,6 +210,7 @@ export function drawCopyButton(x, y, textToCopy, callback) {
 
   // Mousedown: press effect
   canvasElement.addEventListener("mousedown", (e) => {
+    if (InputLock.isLocked()) return;
     const rect = canvasElement.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
@@ -205,6 +223,7 @@ export function drawCopyButton(x, y, textToCopy, callback) {
 
   // Mouseup: copy logic
   canvasElement.addEventListener("mouseup", (e) => {
+    if (InputLock.isLocked()) return;
     const rect = canvasElement.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
@@ -400,6 +419,7 @@ export function drawPatreonButton(x, y, width = 225, height = 40, colors = {}, o
   context.restore();
 
   canvasElement.addEventListener("click", (e) => {
+    if (InputLock.isLocked()) return;
     const rect = canvasElement.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;

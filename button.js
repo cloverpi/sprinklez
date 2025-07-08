@@ -1,5 +1,5 @@
 // button.js
-
+import { InputLock } from './commonui.js'
 const canvas = document.querySelector("canvas");
 const ctx = canvas.getContext("2d");
 const buttons = [];
@@ -12,6 +12,7 @@ export function createButton({
   text,
   color = "#ffcc33",
   textColor = "#222",
+  simulationLock = false,
   onClick = () => {}
 }) {
   const height = 40;
@@ -28,6 +29,7 @@ export function createButton({
     backgroundY: 0,
     backgroundWidth: 0,
     backgroundHeight: 0,
+    simulationLock,
 
     contains(mx, my) {
       return this.hitPath && ctx.isPointInPath(this.hitPath, mx, my);
@@ -40,7 +42,6 @@ export function createButton({
       this.backgroundWidth = box.width;
       this.backgroundHeight = box.height;
       this.backgroundImageData = ctx.getImageData(box.x, box.y, box.width, box.height);
-      // console.log(`Captured background for button "${this.text}" size: ${box.width}x${box.height}`);
     },
 
     restoreBackground() {
@@ -51,7 +52,6 @@ export function createButton({
   };
 
   buttons.push(button);
-  // No drawing or capturing background here
   return button;
 }
 
@@ -70,7 +70,7 @@ function getButtonBoundingBox(b) {
 }
 
 export function buttonDraw() {
-  // Called once after all buttons created
+  InputLock.lock();
   buttons.forEach(b => b.captureBackground());
   buttons.forEach(b => drawButtonShape(b));
 }
@@ -86,17 +86,11 @@ export function simulateClick(button) {
 }
 
 function redrawAllButtons() {
-  // Clear whole canvas or just union of button boxes? Let's clear whole for simplicity
-  // ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // Restore each button's captured background first
   buttons.forEach(b => {
     if (b.backgroundImageData) {
       ctx.putImageData(b.backgroundImageData, b.backgroundX, b.backgroundY);
     }
   });
-
-  // Draw all buttons on top
   buttons.forEach(b => drawButtonShape(b));
 }
 
@@ -172,11 +166,12 @@ function drawButtonShape(b) {
 }
 
 canvas.addEventListener("mousedown", (e) => {
+  if (InputLock.isLocked()) return;
   const { left, top } = canvas.getBoundingClientRect();
   const mx = e.clientX - left;
   const my = e.clientY - top;
   buttons.forEach(b => {
-    if (b.contains(mx, my)) {
+    if (!b.simulationLock && b.contains(mx, my)) {
       b.pressed = true;
       redrawAllButtons();
     }
@@ -184,17 +179,15 @@ canvas.addEventListener("mousedown", (e) => {
 });
 
 canvas.addEventListener("mouseup", (e) => {
+  if (InputLock.isLocked()) return;
   buttons.forEach(b => {
-    if (b.pressed) {
+    if (!b.simulationLock && b.pressed) {
       b.pressed = false;
       redrawAllButtons();
       b.onClick();
     }
   });
 });
-
-// Helper functions (roundTrapezoidPath, roundBottomCornersOnly, shadeColor)
-// ... (same as your previous code)
 
 function roundTrapezoidPath(path, points, radius) {
   const [tl, tr, br, bl] = points;

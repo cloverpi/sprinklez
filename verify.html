@@ -241,10 +241,10 @@
                 ["AmberStrike Monstrosity", parsed.amberStrikeMonstrosity ?? 0, parsed.amberStrikeMonstrosity * 150],
                 ["AmberStrike Un'Sok", parsed.amberStrikeUnsok ?? 0, parsed.amberStrikeUnsok * 15],
                 ["Self Interrupts", parsed.selfInterrupt ?? 0, parsed.selfInterrupt * 50],
-                ["Self Explosions", parsed.selfExplosion ?? 0, -(parsed.selfExplosion * 250)],
+                ["Self Explosions", parsed.selfExplosion ?? 0, (-(parsed.selfExplosion * 250))+300],
                 ["Monstrosity Interrupts", parsed.interrupt ?? 0, parsed.interrupt * 100],
-                ["Consume Amber", parsed.consumeAmber ?? 0, parsed.consumeAmber * -1],
-                ["Time to Kill ", formatTime(parsed.timePlayed ?? 0), Math.floor((parsed.timePlayed/1000) * -1)],
+                ["Consume Amber", parsed.consumeAmber ?? 0, (parsed.consumeAmber * -1)+25],
+                ["Time to Kill ", formatTime(parsed.timePlayed ?? 0), Math.floor(((parsed.timePlayed/1000) * -1)+500)],
             ];
 
         const totalPoints = rows.reduce((sum, [, , pts]) => sum + pts, 0);
