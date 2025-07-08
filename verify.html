@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Completed!</title>
+  <style>
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Segoe UI', sans-serif;
+        background-color: #0a0f1c;
+        background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+                            linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+        background-size: 40px 40px;
+        color: #9be7ff;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .container {
+        position: relative;
+        max-width: 900px;
+        width: 100%;
+        padding: 2rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    h1 {
+      font-size: 3rem;
+      color: #fff;
+      text-shadow: 0 0 10px #00d9ff, 0 0 20px #00d9ff;
+      margin-bottom: 2rem;
+    }
+
+    .message-box, .stats-box {
+      background: rgba(0, 70, 110, 0.4);
+      padding: 1.5rem 2rem;
+      border-radius: 1rem;
+      max-width: 600px;
+      margin-bottom: 1rem;
+      box-shadow: 0 0 10px rgba(0,0,0,0.4);
+    }
+
+    .message-box {
+      font-size: 1rem;
+    }
+
+    .stats-box {
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+
+    .footer-text {
+      margin: 2rem 0 1rem;
+      font-style: italic;
+      font-weight: bold;
+      color: #b0eaff;
+      text-shadow: 0 0 6px #57d9ff;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .btn {
+      width: 75px;
+      background: #e84057;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 1rem;
+      color: white;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      transition: transform 0.2s;
+      text-decoration: none;
+      display: inline-block;
+      text-align: center;
+    }
+
+    .btn:hover {
+      transform: scale(1.1);
+    }
+
+    .patreon {
+      margin-top: 1rem;
+      text-align: center;
+    }
+
+    .patreon a {
+      color: #ff6c6c;
+      font-size: 1rem;
+      text-decoration: none;
+      font-weight: bold;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: color 0.2s ease;
+    }
+
+    .patreon a:hover {
+      color: #ff9999;
+    }
+
+    .patreon img {
+      height: 1.2rem;
+      vertical-align: middle;
+      filter: drop-shadow(0 0 2px #ff6c6c);
+    }
+
+    .footer-note {
+      font-size: 0.75rem;
+      color: #888;
+    }
+
+    .hero-image {
+        position: absolute;
+        left: 100px;
+        top: 40%;
+        transform: translateY(-50%);
+        filter: drop-shadow(0 0 20px #00d9ff);
+        pointer-events: none;
+    }
+
+    .stats-table .label {
+      text-align: left;
+      padding-right: 5rem;
+      width: 80%;         
+      font-weight: 500;
+      color: #bbecff;
+    }
+
+    .stats-table .value {
+      text-align: right;
+      padding-right: 4rem;
+      font-weight: bold;
+      color: #ffffff;
+      width: 20%;
+    }
+
+    .stats-table .points {
+      text-align: right;
+      font-weight: bold;
+      color: #ffffff;
+      white-space: nowrap;
+      width: 25%;
+    }
+
+    .stats-table tr:nth-child(odd) {
+      background-color: rgba(255, 255, 255, 0.03);
+    }
+
+    .total-row {
+      background-color: rgba(0, 217, 255, 0.08);
+    }
+
+    .points-positive {
+      color: #00d9ff;
+      text-shadow: 0 0 4px #00d9ff, 0 0 8px #0096c7;
+    }
+
+    .points-negative {
+      color: #ff4f4f;
+      text-shadow: 0 0 4px #ff4f4f, 0 0 8px #b80000;
+    }
+
+    #completion-date {
+      margin-top: -1.5rem;
+      margin-bottom: 1rem;
+      font-size: 0.85rem; 
+      color: #ccc;
+      text-align: center;
+      font-style: italic;
+    }
+
+  </style>
+</head>
+<body>
+    <div class="container">
+    <h1>Completed!</h1>
+
+    <div class="stats-box" id="statsBox"></div>
+
+    <div id="completion-date"></div>
+
+    <div class="footer-text">The legend of Sprinklez will continue...</div>
+
+    <div class="button-row">
+      <a class="btn" href="https://discord.gg/NKScm9qt97">Join Peak</a>
+      <a class="btn" href="https://cloverpi.github.io/sprinklez/">Play it!</a>
+    </div>
+
+    <div class="patreon">
+        <a href="https://patreon.com/CloverPi">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/9/94/Patreon_logo.svg" alt="Patreon Logo"/>
+        Support on Patreon
+        </a>
+    </div>
+
+    <div class="footer-note">© 2025 CloverPi | Written by Gnerf-Whitemane</div>
+
+    <img src="images/wooo2.webp" alt="Wizard Victory" class="hero-image"/>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const win = params.get("win");
+
+    const statsBox = document.getElementById("statsBox");
+    const completionDate = document.getElementById("completion-date");
+
+    try {
+      if (win) {
+        const decoded = decodeURIComponent(win);
+        const parsed = JSON.parse(atob(decoded));
+        console.log(parsed);
+
+        function formatTime(ms) {
+          const totalSeconds = Math.floor(ms / 1000);
+          const hrs = Math.floor(totalSeconds / 3600);
+          const mins = Math.floor((totalSeconds % 3600) / 60);
+          const secs = totalSeconds % 60;
+
+          const hh = hrs.toString().padStart(2, '0');
+          const mm = mins.toString().padStart(2, '0');
+          const ss = secs.toString().padStart(2, '0');
+
+          return `${mm}:${ss}`;
+        }
+
+        const rows = [
+                ["AmberStrike Total", parsed.amberStrike ?? 0, parsed.amberStrike * 10],
+                ["AmberStrike Monstrosity", parsed.amberStrikeMonstrosity ?? 0, parsed.amberStrikeMonstrosity * 150],
+                ["AmberStrike Un'Sok", parsed.amberStrikeUnsok ?? 0, parsed.amberStrikeUnsok * 15],
+                ["Self Interrupts", parsed.selfInterrupt ?? 0, parsed.selfInterrupt * 50],
+                ["Self Explosions", parsed.selfExplosion ?? 0, -(parsed.selfExplosion * 250)],
+                ["Monstrosity Interrupts", parsed.interrupt ?? 0, parsed.interrupt * 100],
+                ["Consume Amber", parsed.consumeAmber ?? 0, parsed.consumeAmber * -1],
+                ["Time to Kill ", formatTime(parsed.timePlayed ?? 0), Math.floor((parsed.timePlayed/1000) * -1)],
+            ];
+
+        const totalPoints = rows.reduce((sum, [, , pts]) => sum + pts, 0);
+
+        const tableHTML = `
+            <table class="stats-table">
+                <tbody>
+                ${rows.map(([label, value, points]) => `
+                    <tr>
+                    <td class="label">${label}</td>
+                    <td class="value">${value}</td>
+                    <td class="points ${points >= 0 ? 'points-positive' : 'points-negative'}">
+                        ${points} <span class="pts-label">pts</span>
+                    </td>
+                    </tr>
+                `).join("")}
+                <tr class="total-row">
+                    <td class="label">Total</td>
+                    <td class="value"></td>
+                    <td class="points points-positive total-points">
+                    ${totalPoints} <span class="pts-label">pts</span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            `;
+
+
+        statsBox.innerHTML = tableHTML;
+        completionDate.innerHTML = `Completed on: ${new Date(parsed.time).toLocaleString()}`
+        ;
+
+
+      } else {
+        // messageBox.textContent = defaultMessage;
+      }
+    } catch (e) {
+    //   messageBox.textContent = defaultMessage;
+    }
+  </script>
+</body>
+</html>
