@@ -12,10 +12,10 @@ const tabImage = [
     newImage("./images/as1.jpg"),
 ];
 const wasdImage = [
-    newImage("./images/keyw.svg"),
-    newImage("./images/keya.svg"),
-    newImage("./images/keys.svg"),
-    newImage("./images/keyd.svg"),
+    newImage("./images/keyw.webp"),
+    newImage("./images/keya.webp"),
+    newImage("./images/keys.webp"),
+    newImage("./images/keyd.webp"),
 ];
 const abilityImage = [
     newImage("./images/as1.jpg"),
