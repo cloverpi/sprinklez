@@ -57,7 +57,7 @@ export function createButton({
 
 export function clearButtons() {
   buttons.splice(0, buttons.length);
-
+  InputLock.lock();
 }
 
 function getButtonBoundingBox(b) {
@@ -70,7 +70,6 @@ function getButtonBoundingBox(b) {
 }
 
 export function buttonDraw() {
-  InputLock.lock();
   buttons.forEach(b => b.captureBackground());
   buttons.forEach(b => drawButtonShape(b));
 }
@@ -95,6 +94,7 @@ function redrawAllButtons() {
 }
 
 function drawButtonShape(b) {
+  ctx.save();
   const shiftY = -6;
   const widen = 6;
   const yOffset = b.pressed ? b.depth * 0.6 : 0;
@@ -162,6 +162,7 @@ function drawButtonShape(b) {
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(b.text, b.x + b.width / 2, b.y + b.height / 2 + yOffset);
+  ctx.restore();
   ctx.restore();
 }
 

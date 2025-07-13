@@ -1,6 +1,8 @@
 import { drawLegendLine, drawEndScreenHeading, cheeseParagraph, drawEndScreenBackground, drawFooter, newImage, newAudio, AudioManager, drawCopyButton } from './commonui.js'
 import { createButton, clearButtons, buttonDraw } from './button.js';
 
+const LZString = window.LZString;
+
 const canvasElement = document.getElementById("secret");
 const context = canvasElement.getContext("2d");
 
@@ -108,7 +110,7 @@ export function win(stats) {
     colors.paragraph, 200, 160, );
 
 
-  console.log(encodeURIComponent(window.btoa(JSON.stringify(stats))));
+  // console.log(encodeURIComponent(window.btoa(JSON.stringify(stats))));
 
   const winReason = 
   `AmberStrike Total: ${stats.amberStrike}\n
@@ -122,7 +124,18 @@ export function win(stats) {
     colors.paragraph, boxInfo.boxX, boxInfo.boxY + boxInfo.boxHeight + 20, boxInfo.boxWidth, 160
   );
 
-  const drawCopy = drawCopyButton(boxStatsInfo.boxX+450, boxStatsInfo.boxY+50, `https://cloverpi.github.io/sprinklez/verify.html?win=${encodeURIComponent(window.btoa(JSON.stringify(stats)))}`);
+  const objExport = { 
+                      asm: stats.amberStrikeMonstrosity,
+                      asu: stats.amberStrikeUnsok,
+                      ca: stats.consumeAmber,
+                      i: stats.selfInterrupt,
+                      se: stats.selfExplosion,
+                      si: stats.selfInterrupt,
+                      t: stats.time,
+                      tp: stats.timePlayed,
+                    }
+  
+  const drawCopy = drawCopyButton(boxStatsInfo.boxX+450, boxStatsInfo.boxY+50, `https://cloverpi.github.io/sprinklez/verify.html?win=${LZString.compressToEncodedURIComponent((JSON.stringify(objExport)))}`);
   drawCopy();
 
   drawLegendLine(boxStatsInfo.boxX, boxStatsInfo.boxY-20, boxStatsInfo.boxWidth, boxStatsInfo.boxHeight, colors.legend);

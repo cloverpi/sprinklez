@@ -209,19 +209,22 @@
 
     <img src="images/wooo2.webp" alt="Wizard Victory" class="hero-image"/>
   </div>
-
+  <script src="./lzstring.js"></script>
   <script>
     const params = new URLSearchParams(window.location.search);
     const win = params.get("win");
+
+    console.log(win);
 
     const statsBox = document.getElementById("statsBox");
     const completionDate = document.getElementById("completion-date");
 
     try {
       if (win) {
-        const decoded = decodeURIComponent(win);
-        const parsed = JSON.parse(atob(decoded));
-        console.log(parsed);
+        const decoded = LZString.decompressFromEncodedURIComponent(win);
+        const parsed = JSON.parse(decoded);
+
+        parsed.as = parsed.asu + parsed.asm;
 
         function formatTime(ms) {
           const totalSeconds = Math.floor(ms / 1000);
@@ -237,14 +240,14 @@
         }
 
         const rows = [
-                ["AmberStrike Total", parsed.amberStrike ?? 0, parsed.amberStrike * 10],
-                ["AmberStrike Monstrosity", parsed.amberStrikeMonstrosity ?? 0, parsed.amberStrikeMonstrosity * 150],
-                ["AmberStrike Un'Sok", parsed.amberStrikeUnsok ?? 0, parsed.amberStrikeUnsok * 15],
-                ["Self Interrupts", parsed.selfInterrupt ?? 0, parsed.selfInterrupt * 50],
-                ["Self Explosions", parsed.selfExplosion ?? 0, (-(parsed.selfExplosion * 250))+250],
-                ["Monstrosity Interrupts", parsed.interrupt ?? 0, parsed.interrupt * 100],
-                ["Consume Amber", parsed.consumeAmber ?? 0, (parsed.consumeAmber * -1)+25],
-                ["Time to Kill ", formatTime(parsed.timePlayed ?? 0), Math.floor(((parsed.timePlayed/1000) * -1)+500)],
+                ["AmberStrike Total", parsed.as ?? 0, parsed.as * 10],
+                ["AmberStrike Monstrosity", parsed.asm ?? 0, parsed.asm * 150],
+                ["AmberStrike Un'Sok", parsed.asu ?? 0, parsed.asu * 15],
+                ["Self Interrupts", parsed.si ?? 0, parsed.si * 50],
+                ["Self Explosions", parsed.se ?? 0, (-(parsed.se * 250))+250],
+                ["Monstrosity Interrupts", parsed.i ?? 0, parsed.i * 100],
+                ["Consume Amber", parsed.ca ?? 0, (parsed.ca * -1)+25],
+                ["Time to Kill ", formatTime(parsed.tp ?? 0), Math.floor(((parsed.tp/1000) * -1)+500)],
             ];
 
         const totalPoints = rows.reduce((sum, [, , pts]) => sum + pts, 0);
@@ -274,7 +277,7 @@
 
 
         statsBox.innerHTML = tableHTML;
-        completionDate.innerHTML = `Completed on: ${new Date(parsed.time).toLocaleString()}`
+        completionDate.innerHTML = `Completed on: ${new Date(parsed.t).toLocaleString()}`
         ;
 
 

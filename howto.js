@@ -56,7 +56,7 @@ function imagesLoaded(images) {
     return unloadedTotal == 0;
 }
 
-export function howToPlayInit(onStartCallback) {
+export function howToPlayInit(back, start) {
 
 
     clearButtons();
@@ -125,21 +125,41 @@ export function howToPlayInit(onStartCallback) {
     sectionY += sectionHeight + 20;
     });
 
+
+          // Buttons
     createButton({
-        x: canvasElement.width / 2 - 80,
-        y: canvasElement.height - 90,
-        width: 160,
+        x: 220,
+        y: height - 80,
+        width: 150,
         height: 40,
-        text: "Start",
-        color: colors.pinkButton.color,
-        textColor: colors.pinkButton.textColor,
+        text: "Back",
+        color: "#88888",
+        textColor: "#ffffff",
         onClick: () => {
             canvasElement.removeEventListener('mousemove', handleMouseMove);
             if (hoverInterval) {
                 clearInterval(hoverInterval);
                 hoverInterval = null;
             }
-            onStartCallback();
+            back()
+        }
+    });
+
+    createButton({
+        x: 430,
+        y: height - 80,
+        width: 150,
+        height: 40,
+        text: "Start",
+        color: "#00B4FF",
+        textColor: "#ffffff",
+        onClick: () => {
+            canvasElement.removeEventListener('mousemove', handleMouseMove);
+            if (hoverInterval) {
+                clearInterval(hoverInterval);
+                hoverInterval = null;
+            }
+            start();
         }
     });
 }
@@ -151,7 +171,7 @@ export function drawHowToPlay() {
 
     context.clearRect(0, 0, canvasElement.width, canvasElement.height);
     drawEndScreenBackground(colors.background);
-    drawEndScreenHeading("How to Play", canvasElement.width / 2, 30, colors.heading);
+    drawEndScreenHeading("Controls", canvasElement.width / 2, 30, colors.heading);
 
     context.save();
     for (const section of sections) {
@@ -223,4 +243,9 @@ function handleMouseMove(e) {
     }
 }
 
-canvasElement.addEventListener('mousemove', handleMouseMove);
+export function controls(back, start) {
+    canvasElement.addEventListener('mousemove', handleMouseMove);
+    howToPlayInit(back, start);
+    drawHowToPlay();
+}
+

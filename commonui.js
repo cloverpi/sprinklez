@@ -358,6 +358,26 @@ export function cheeseParagraph(text, colors, boxX = 200, boxY = 240, boxWidth =
   };
 }
 
+export function drawBackgroundGrid(grid, w = width, h = height) {
+  context.save();
+
+  context.strokeStyle = grid;
+  context.lineWidth = 1;
+  for (let x = 0; x < w; x += 40) {
+    context.beginPath();
+    context.moveTo(x, 0);
+    context.lineTo(x, h);
+    context.stroke();
+  }
+  for (let y = 0; y < h; y += 40) {
+    context.beginPath();
+    context.moveTo(0, y);
+    context.lineTo(w, y);
+    context.stroke();
+  }
+  context.restore();
+}
+
 export function drawEndScreenBackground(colors) {
   context.save();
 
@@ -367,21 +387,9 @@ export function drawEndScreenBackground(colors) {
   context.fillStyle = bgGrad;
   context.fillRect(0, 0, width, height);
 
-  context.strokeStyle = colors.grid;
-  context.lineWidth = 1;
-  for (let x = 0; x < width; x += 40) {
-    context.beginPath();
-    context.moveTo(x, 0);
-    context.lineTo(x, height);
-    context.stroke();
-  }
-  for (let y = 0; y < height; y += 40) {
-    context.beginPath();
-    context.moveTo(0, y);
-    context.lineTo(width, y);
-    context.stroke();
-  }
-  context.restore();
+   context.restore();
+
+  drawBackgroundGrid(colors.grid);
 }
 
 export function drawPatreonButton(x, y, width = 225, height = 40, colors = {}, onLoadCallback) {

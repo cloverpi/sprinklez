@@ -1,6 +1,6 @@
 import * as ai from './ai.js';
 import { win, loss } from './endscreen.js';
-import { howToPlayInit, drawHowToPlay } from './howto.js';
+import { startMenu } from './menu.js';
 import { newImage, newAudio, AudioManager } from './commonui.js'
 import { clearButtons } from './button.js';
 
@@ -809,7 +809,7 @@ function randomBellCurve(min, max, skew) {
 }
 
 
-function gameStartInit(){
+export function gameStartInit(){
     startTime = Date.now();
     lastUpdate = Date.now();
     clearButtons();
@@ -878,8 +878,8 @@ function draw() {
 
 function drawGameBackground() {
     const gradient = context.createRadialGradient(width/2, gameHeight/2, 100, width/2, gameHeight/2, 400);
-    gradient.addColorStop(0, "#473400");
-    gradient.addColorStop(0.75, "#382900");
+    gradient.addColorStop(0, "#5c3400");
+    gradient.addColorStop(0.9, "#301c00");
     context.beginPath();
     context.fillStyle = gradient;
     context.rect(0, 0, width, gameHeight);
@@ -1067,11 +1067,13 @@ function drawFakeBigWigs(time) {
 
                         context.font = "10px arial";
                         context.textBaseline = "top";
+                        context.textAlign = "left"
                         context.fillStyle ="#4444CC";
                         context.fillText(spell.name,deadlyfojjiwigsFrameLeftCorner[0]+4,deadlyfojjiwigsFrameLeftCorner[1]+((20)*spellIndex)+3);
 
                         context.font = "10px arial";
                         context.textBaseline = "top";
+                        context.textAlign = "left"
                         context.fillStyle ="#4444CC";
                         context.fillText(timeLeft.toFixed(1),deadlyfojjiwigsFrameLeftCorner[0]+deadlyfojjiwigsBarDimensions[0]-20,deadlyfojjiwigsFrameLeftCorner[1]+((20)*spellIndex)+3);
                     }
@@ -1118,12 +1120,14 @@ function drawCastBars(time){
                 context.save();
                 context.font = "10px arial";
                 context.textBaseline = "top";
+                context.textAlign = "left"
                 context.fillStyle ="#AAAAAA";
                 context.fillText(spell.name,castBarFrameLeftCorner[0]+2,castBarFrameLeftCorner[1]+20+6);
                 context.restore()
 
                 context.font = "12px arial";
                 context.textBaseline = "top";
+                context.textAlign = "left"
                 context.fillStyle ="#AAAAAA";
                 context.fillText(castTimeLeft,castBarFrameLeftCorner[0]+castBarFrameDimensions[0]-20,castBarFrameLeftCorner[1]+20+6);
 
@@ -1701,6 +1705,4 @@ function frostBolt() {
         } );
 }
 
-
-howToPlayInit(gameStartInit);
-drawHowToPlay();
+startMenu();
