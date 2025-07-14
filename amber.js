@@ -303,7 +303,7 @@ const gameEvents = {
         endon: () => true,
     },
     tutorialBreakFree: {
-        condition: () => ( tutorialMode && units["redPlayer"].amber && (units["redPlayer"].hp/units["redPlayer"].maxhp) <= 0.2 ),
+        condition: () => ( tutorialMode && units["redPlayer"].amber && (units["redPlayer"].hp/units["redPlayer"].maxhp) <= 0.22 ),
         action: () => {
                     const warning = "Refresh (1) Amber-Strike if possible, and immediately (4) Break Free.";
                     raidWarning = warning;

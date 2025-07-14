@@ -6,20 +6,42 @@ const canvasElement = document.getElementById("secret");
 const context = canvasElement.getContext("2d");
 const { width, height } = canvasElement;
 
-// Mechanics Overview Canvas Page
+const monstrosityImage = newImage("./images/ac.jpg");
+
+const abilityImage = [
+    newImage("./images/as1.jpg"),
+    newImage("./images/sc1.jpg"),
+    newImage("./images/ca1.jpg"),
+    newImage("./images/bf1.jpg"),
+];
+
+function imagesLoaded(...args) {
+    let unloadedTotal = 0;
+
+    if ( !monstrosityImage.complete ) {
+      unloadedTotal++;
+      monstrosityImage.onload = () => drawMechanicsOverview(...args);
+    }
+    abilityImage.forEach((image)=> {
+        if (!image.complete) {
+            unloadedTotal++;
+            image.onload = () => drawMechanicsOverview(...args);
+        }
+    });
+    return unloadedTotal == 0;
+}
 
 export function drawMechanicsOverview(back, start) {
+  if ( !imagesLoaded(back, start) ) return;
   clearButtons();
   context.clearRect(0, 0, width, height);
 
-  // Background
   drawEndScreenBackground({
     bgTop: "#001322",
     bgBottom: "#000000",
     grid: "rgba(0,180,255,0.1)"
   });
 
-  // Title
   drawEndScreenHeading("Mechanics Overview", width / 2, 30, {
     shadow: "rgba(0,180,255,0.8)",
     fill: "#00B4FF",
@@ -34,26 +56,26 @@ export function drawMechanicsOverview(back, start) {
     textShadow: "rgba(0,60,120,0.7)"
   };
 
-  // Section Headings
   context.save();
   context.font = "bold 20px 'Segoe UI', Arial";
   context.fillStyle = abilityColors.textFill;
   context.shadowColor = abilityColors.textShadow;
   context.shadowBlur = 4;
   context.textAlign = "left";
-  context.fillText("Abilities", 80, 140);
-  context.fillText("Critical Mechanics", 80, 420);
+  context.fillText("Monstrosity Abilities", 80, 140);
+  context.fillText("Your Abilities", 80, 230);
+  context.fillText("Critical Responsibilities", 80, 480);
   context.restore();
 
-  // Abilities section
-  drawAbilityWithIcon("[1] Amber Strike", "Interrupts boss's Amber Explosion, applies stacking debuff.", 80, 160);
-  drawAbilityWithIcon("[2] Struggle for Control", "Interrupts your own Amber Explosion every 13s.", 80, 210);
-  drawAbilityWithIcon("[3] Consume Amber", "Refills willpower. Only use in Phase 3.", 80, 260);
-  drawAbilityWithIcon("[4] Break Free", "Exits construct at 20% HP. Also interrupts self.", 80, 310);
+  drawAbilityWithIcon(monstrosityImage, "Amber Explosion", "[48s CD, 2s cast]", "AoE Explosion dealing ~500k to all raid members.", 80, 150);
 
-  // Critical Mechanics box
+  drawAbilityWithIcon(abilityImage[0], "[1] Amber Strike", "[6s CD]", "Interrupts Amber Explosion, applies stacking damage taken debuff.", 80, 240);
+  drawAbilityWithIcon(abilityImage[1], "[2] Struggle for Control", "[6s CD, 8 willpower]", "Interrupts your own Amber Explosion every 13s.", 80, 290);
+  drawAbilityWithIcon(abilityImage[2], "[3] Consume Amber", "", "Refills willpower (50 willpower phase 3, 20 willpower otherwise)", 80, 340);
+  drawAbilityWithIcon(abilityImage[3], "[4] Break Free", "", "Exits construct at 20% HP. Also interrupts self.", 80, 390);
+
   const notesBoxX = 70;
-  const notesBoxY = 450;
+  const notesBoxY = 490;
   const notesBoxWidth = 660;
   const notesBoxHeight = 140;
 
@@ -68,13 +90,6 @@ export function drawMechanicsOverview(back, start) {
   context.fill();
   context.restore();
 
-//   drawLegendLine(notesBoxX, notesBoxY, notesBoxWidth, notesBoxHeight, {
-//     shadow: "rgba(0,180,255,0.9)",
-//     fill: "rgba(0,200,255,0.8)",
-//     highlight: "#a0f0ff",
-//     stroke: "rgba(200,255,255,0.7)"
-//   });
-
   context.save();
   context.font = "16px 'Segoe UI', Arial";
   context.fillStyle = abilityColors.textFill;
@@ -84,10 +99,10 @@ export function drawMechanicsOverview(back, start) {
   context.textBaseline = "top";
 
   const lines = [
-    "🧟 Monstrosity casts Amber Explosion → Use [1] near the end of the cast",
-    "😵 You auto-cast Amber Explosion every 13s → Interrupt with [2]",
-    "💀 Willpower depleting or HP low → Use [4] to exit safely",
-    "⚠️ In Phase 3 → Use [3] to refill willpower and keep stacking [1]"
+    "💀 Ensure you interrupt every Amber Monstrosity-Amber Explosion.",
+    "⚠️ When Amber Explosion cooldown is nearing, save Amber Strike CD to interrupt.",
+    "😵 You cast your own AE every 13s, interrupt with [2]. Watch your willpower!",
+    "🧟 As a non-tank, try not to use Consume Amber [3] at all until phase 3."
   ];
   let y = notesBoxY + 20;
   for (const line of lines) {
@@ -104,7 +119,7 @@ export function drawMechanicsOverview(back, start) {
     width: 150,
     height: 40,
     text: "Back",
-    color: "#88888",
+    color: "#5ed65e",
     textColor: "#ffffff",
     onClick: () => back()
   });
@@ -115,7 +130,7 @@ export function drawMechanicsOverview(back, start) {
     width: 150,
     height: 40,
     text: "Start",
-    color: "#00B4FF",
+    color: "#ff5740",
     textColor: "#ffffff",
     onClick: () => start()
   });
@@ -123,24 +138,32 @@ export function drawMechanicsOverview(back, start) {
   buttonDraw();
 }
 
-function drawAbilityWithIcon(title, desc, x, y) {
+function drawAbilityWithIcon(image, title, cooldown, desc, x, y) {
   const iconSize = 32;
   const spacing = 12;
+  let titleWidth = 0;
 
   context.save();
 
   // Placeholder icon box
-  context.fillStyle = "#444";
-  context.fillRect(x, y, iconSize, iconSize);
+  // context.fillStyle = "#444";
+  // context.fillRect(x, y, iconSize, iconSize);
+  context.drawImage(image,x,y,iconSize,iconSize);
 
-  context.font = "16px 'Segoe UI', Arial";
+  context.font = "bold 16px 'Segoe UI', Arial";
   context.textBaseline = "top";
   context.textAlign = "left";
   context.fillStyle = "#00B4FF";
   context.shadowColor = "rgba(0,60,120,0.7)";
   context.shadowBlur = 2;
 
+  titleWidth = context.measureText(title).width;
   context.fillText(title, x + iconSize + spacing, y);
+
+  context.font = "italic 12px 'Segoe UI', Arial";
+  context.fillText(cooldown, x + iconSize + titleWidth + spacing*1.5, y+2);
+
+  context.font = "16px 'Segoe UI', Arial";
   context.fillText(desc, x + iconSize + spacing, y + 18);
 
   context.restore();

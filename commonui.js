@@ -2,7 +2,7 @@ const canvasElement = document.getElementById("secret");
 const context = canvasElement.getContext("2d");
 
 const { width, height } = canvasElement;
-const patreonLogo = newImage("https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/Patreon_logo.svg/541px-Patreon_logo.svg.png?20140225173435");
+const patreonLogo = newImage("images/patreon.svg");
 let patreonArea;
 
 export function newImage(src) {
@@ -376,6 +376,18 @@ export function drawBackgroundGrid(grid, w = width, h = height) {
     context.stroke();
   }
   context.restore();
+
+  context.save();
+  context.strokeStyle = grid;
+  context.lineWidth = 6;
+  context.beginPath();
+  context.moveTo(0, 0);
+  context.lineTo(0, h);
+  context.lineTo(w, h);
+  context.lineTo(w, 0);
+  context.lineTo(0, 0);
+  context.stroke();
+  context.restore();
 }
 
 export function drawEndScreenBackground(colors) {
@@ -387,7 +399,7 @@ export function drawEndScreenBackground(colors) {
   context.fillStyle = bgGrad;
   context.fillRect(0, 0, width, height);
 
-   context.restore();
+  context.restore();
 
   drawBackgroundGrid(colors.grid);
 }

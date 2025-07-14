@@ -133,7 +133,7 @@ export function howToPlayInit(back, start) {
         width: 150,
         height: 40,
         text: "Back",
-        color: "#88888",
+        color: "#5ed65e",
         textColor: "#ffffff",
         onClick: () => {
             canvasElement.removeEventListener('mousemove', handleMouseMove);
@@ -151,7 +151,7 @@ export function howToPlayInit(back, start) {
         width: 150,
         height: 40,
         text: "Start",
-        color: "#00B4FF",
+        color: "#ff5740",
         textColor: "#ffffff",
         onClick: () => {
             canvasElement.removeEventListener('mousemove', handleMouseMove);
