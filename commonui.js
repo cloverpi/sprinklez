@@ -12,13 +12,15 @@ export function newImage(src) {
 }
 
 export const AudioManager = (() => {
+    let muted = false;
     const playing = [];
 
     function play(audio, onEndCallback) {
         if (!(audio instanceof Audio)) throw new Error("Not an Audio object.");
 
         audio.currentTime = 0;
-        audio.play().catch(() => {});
+        audio.muted = muted;
+        audio.play().catch(() => console.log);
         playing.push(audio);
 
         const handleEnded = () => {
@@ -30,6 +32,10 @@ export const AudioManager = (() => {
         };
 
         audio.onended = handleEnded;
+    }
+
+    function getPlaying() {
+        return playing;
     }
 
     function stop(audio) {
@@ -47,20 +53,153 @@ export const AudioManager = (() => {
             audio.pause();
             audio.currentTime = 0;
         }
-        playing.length = 0;
     }
 
-    function getPlaying() {
-        return playing.slice();
+    function muteAll(m){
+      muted = m;
+      for (const audio of playing) {
+        audio.muted = muted;
+      }
+    }
+
+    function isMuted(){
+      return muted;
+    }
+
+    function toggleMute(cookie = false){
+      if (cookie) setCookie("muted", !muted, 365);
+      muteAll(!muted);
     }
 
     return {
         play,
         stop,
         stopAll,
-        getPlaying
+        getPlaying,
+        muteAll,
+        isMuted,
+        toggleMute,
     };
 })();
+
+export function MuteIcon(options = {}) {
+  const size = options.size ?? 28;
+  const x = options.x ?? 798 - size ;
+  const y = options.y ?? 1;
+  const autoRedraw = options.autoRedraw ?? true;
+  let _handler;
+  let bgImageData = undefined;
+
+  function isInside(mx, my) {
+    return (
+      mx >= x &&
+      mx <= x + size &&
+      my >= y &&
+      my <= y + size
+    );
+  }
+
+  function snapshotBackground() {
+    if (autoRedraw) {
+      bgImageData = context.getImageData(x, y, size, size);
+    }
+  }
+
+  function restoreBackground() {
+    if (autoRedraw && bgImageData) {
+      context.putImageData(bgImageData, x, y);
+    }
+  }
+
+  function draw() {
+    context.save();
+    if (autoRedraw) {
+      if (bgImageData != undefined) {
+        restoreBackground();
+      } else {
+        snapshotBackground();
+      }
+    };
+
+    // Speaker icon
+    context.fillStyle = "#fff";
+    context.beginPath();
+    context.moveTo(x + size * 0.22, y + size * 0.65);
+    context.lineTo(x + size * 0.38, y + size * 0.65);
+    context.lineTo(x + size * 0.60, y + size * 0.85);
+    context.lineTo(x + size * 0.60, y + size * 0.15);
+    context.lineTo(x + size * 0.38, y + size * 0.35);
+    context.lineTo(x + size * 0.22, y + size * 0.35);
+    context.closePath();
+    context.fill();
+
+    // Mute "X" or sound waves
+    if (AudioManager.isMuted()) {
+      context.strokeStyle = "#ff3333";
+      context.lineWidth = 3;
+      context.beginPath();
+      context.moveTo(x + size * 0.68, y + size * 0.32);
+      context.lineTo(x + size * 0.88, y + size * 0.68);
+      context.moveTo(x + size * 0.88, y + size * 0.32);
+      context.lineTo(x + size * 0.68, y + size * 0.68);
+      context.stroke();
+    } else {
+      context.strokeStyle = "#fff";
+      context.lineWidth = 2.1;
+      context.beginPath();
+      context.arc(x + size * 0.68, y + size * 0.5, size * 0.12, -0.5, 0.5);
+      context.stroke();
+      context.beginPath();
+      context.arc(x + size * 0.75, y + size * 0.5, size * 0.18, -0.5, 0.5);
+      context.stroke();
+    }
+
+    context.restore();
+  }
+
+  function handleCanvasEvent(e) {
+    const rect = canvasElement.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    if (isInside(mx, my)) {
+      AudioManager.toggleMute(true);
+      draw();
+      if (typeof options.onToggle === "function") options.onToggle(AudioManager.isMuted());
+    }
+  }
+
+  function attach() {
+    if (!_handler) {
+      _handler = handleCanvasEvent;
+      canvasElement.addEventListener('mouseup', _handler);
+    }
+  }
+
+  function detach() {
+    if (_handler) {
+      canvasElement.removeEventListener('mouseup', _handler);
+      _handler = null;
+    }
+  }
+
+  function getArea() {
+    return { x, y, width: size, height: size }
+  };
+
+  function resetBackground() {
+    bgImageData = undefined;
+  }
+
+  return {
+    draw,
+    attach,
+    detach,
+    isInside,
+    getArea,
+    resetBackground
+  };
+}
+
 
 export function newAudio(src, vol, pr = 1) {
     const snd = new Audio(src);
@@ -406,7 +545,6 @@ export function drawEndScreenBackground(colors) {
 
 export function drawPatreonButton(x, y, width = 225, height = 40, colors = {}, onLoadCallback) {
     patreonLogo.onload = () => {
-        console.log("Patreon logo loaded");
         if (typeof onLoadCallback == "function") onLoadCallback();
     };
   context.save();

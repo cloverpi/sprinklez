@@ -1,5 +1,5 @@
 
-import { roundRect, drawEndScreenHeading, drawEndScreenBackground, newImage } from './commonui.js'
+import { roundRect, drawEndScreenHeading, drawEndScreenBackground, newImage, MuteIcon } from './commonui.js'
 import { createButton, clearButtons, buttonDraw, simulateClick  } from './button.js';
 
 const canvasElement = document.getElementById("secret");
@@ -7,6 +7,8 @@ const context = canvasElement.getContext("2d");
 let hoveredSection = null;
 let hoverInterval = null;
 
+const muteIcon = MuteIcon();
+muteIcon.resetBackground();
 const tabImage = [
     newImage("./images/keytab.webp"),
     newImage("./images/as1.jpg"),
@@ -57,8 +59,6 @@ function imagesLoaded(images) {
 }
 
 export function howToPlayInit(back, start) {
-
-
     clearButtons();
     sections.length = 0;
 
@@ -125,8 +125,6 @@ export function howToPlayInit(back, start) {
     sectionY += sectionHeight + 20;
     });
 
-
-          // Buttons
     createButton({
         x: 220,
         y: height - 80,
@@ -137,6 +135,8 @@ export function howToPlayInit(back, start) {
         textColor: "#ffffff",
         onClick: () => {
             canvasElement.removeEventListener('mousemove', handleMouseMove);
+            muteIcon.detach();
+
             if (hoverInterval) {
                 clearInterval(hoverInterval);
                 hoverInterval = null;
@@ -155,6 +155,8 @@ export function howToPlayInit(back, start) {
         textColor: "#ffffff",
         onClick: () => {
             canvasElement.removeEventListener('mousemove', handleMouseMove);
+            muteIcon.detach();
+
             if (hoverInterval) {
                 clearInterval(hoverInterval);
                 hoverInterval = null;
@@ -162,6 +164,8 @@ export function howToPlayInit(back, start) {
             start();
         }
     });
+
+    muteIcon.attach();
 }
 
 export function drawHowToPlay() {
@@ -198,6 +202,7 @@ export function drawHowToPlay() {
     context.restore();
 
     buttonDraw();
+    muteIcon.draw();
 }
 
 function handleMouseMove(e) {

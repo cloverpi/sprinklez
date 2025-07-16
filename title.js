@@ -1,4 +1,4 @@
-import { newImage, drawBackgroundGrid, roundRect, InputLock } from './commonui.js';
+import { newImage, drawBackgroundGrid, roundRect, InputLock, newAudio, AudioManager, MuteIcon } from './commonui.js';
 import { createButton, clearButtons, buttonDraw } from './button.js';
 import { startMenu } from './menu.js';
 
@@ -18,13 +18,14 @@ function createGridPattern(grid) {
     drawBackgroundGrid(grid);
 }
 
+const muteIcon = MuteIcon();
+const music = newAudio("sounds/music/snow.mp3", 0.3);
 const bossImage = newImage("images/amber-shaper-title.webp");
 const raiderImage = newImage("images/will-title.webp");
 const bottombg = newImage("images/bg-title.webp");
 
 const patreonImage = newImage("images/patreon.svg");
 const githubImage = newImage("images/github.svg");
-
 
 function handleMouseMove(e) {
   const rect = canvasElement.getBoundingClientRect();
@@ -289,60 +290,88 @@ export function drawTitle() {
 
   // === Draw Visual Buttons on Black Section ===
   buttonDraw();
+  muteIcon.draw();
 }
-
-
 
 export function title(mechanics, controls, start) {
   clearButtons();
 
-  createButton({
-          x: 220,
-          y: topHeight + 50,
-          width: 160,
-          height: 40,
-          text: "Mechanics",
-          color: "#4588c7",
-          textColor: "#fff",
-          onClick: () => {
-            canvasElement.removeEventListener('mousemove', handleMouseMove);
-            canvasElement.removeEventListener('mouseup', handleMouseUp);
-            mechanics(startMenu, start);
-          }
-      });
+  const canvasCenterX = canvasElement.width / 2;
+
+  const smallButtonWidth = 160 * 0.75;
+  const largeButtonWidth = 280 * 1.11;
+
+  // Verticals
+  const mechanicsY = topHeight + 80;
+  const controlsY = topHeight + 80;
+  const startY = topHeight + 140;
 
   createButton({
-        x: 420,
-        y: topHeight + 50,
-        width: 160,
-        height: 40,
-        text: "Controls",
-        color: "#66cc66",
-        textColor: "#fff",
-        onClick: () => {
-          canvasElement.removeEventListener('mousemove', handleMouseMove);
-          canvasElement.removeEventListener('mouseup', handleMouseUp);
-          controls(startMenu, start);
-        }
-    });
+    x: canvasCenterX - smallButtonWidth - 10, // left of center
+    y: mechanicsY,
+    width: 160,
+    height: 40,
+    scale: 0.75,
+    text: "Mechanics",
+    color: "#4588c7",
+    textColor: "#fff",
+    onClick: () => {
+      cleanupTitle();
+      mechanics(startMenu, start);
+    }
+  });
 
-    createButton({
-        x: 220,
-        y: topHeight + 140,
-        width: 360,
-        height: 40,
-        text: "Start",
-        color: "#ff1e00",
-        textColor: "#fff",
-        onClick: () => {
-          canvasElement.removeEventListener('mousemove', handleMouseMove);
-          canvasElement.removeEventListener('mouseup', handleMouseUp);
-          start()
-        }
-    });
+  createButton({
+    x: canvasCenterX + 10, // right of center
+    y: controlsY,
+    width: 160,
+    height: 40,
+    scale: 0.75,
+    text: "Controls",
+    color: "#66cc66",
+    textColor: "#fff",
+    onClick: () => {
+      cleanupTitle();
+      controls(startMenu, start);
+    }
+  });
 
-    canvasElement.addEventListener("mouseup", handleMouseUp);
-    canvasElement.addEventListener("mousemove", handleMouseMove);
+  createButton({
+    x: canvasCenterX - (largeButtonWidth / 2),
+    y: startY,
+    width: 280,
+    height: 40,
+    scale: 1.11,
+    text: "Start",
+    color: "#ff1e00",
+    textColor: "#fff",
+    onClick: () => {
+      cleanupTitle();
+      start();
+    }
+  });
 
-    drawTitle();
+  canvasElement.addEventListener("mouseup", handleMouseUp);
+  canvasElement.addEventListener("mousemove", handleMouseMove);
+  muteIcon.attach();
+
+  drawTitle();
 }
+
+function cleanupTitle(){
+  canvasElement.removeEventListener('mousemove', handleMouseMove);
+  canvasElement.removeEventListener('mouseup', handleMouseUp);
+  muteIcon.detach();
+}
+
+function enableMusicAutoplayOnUserInput() {
+  const unlock = () => {
+    AudioManager.play(music);
+    window.removeEventListener('pointerdown', unlock);
+    window.removeEventListener('keydown', unlock);
+  };
+  window.addEventListener('pointerdown', unlock);
+  window.addEventListener('keydown', unlock);
+}
+
+enableMusicAutoplayOnUserInput();

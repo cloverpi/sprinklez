@@ -80,7 +80,6 @@ export function unitInRange(unit, target, radius = 0) {
 }
 
 export function applyVelocityFromGoals(unit) {
-    // console.log('hi');
     let vx = 0, vy = 0, totalWeight = 0;
     for (const goal of unit.goals || []) {
         const dx = goal.x - unit.x;

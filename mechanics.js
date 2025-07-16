@@ -1,11 +1,13 @@
 
-import { roundRect, drawEndScreenHeading, drawEndScreenBackground, newImage } from './commonui.js'
+import { roundRect, drawEndScreenHeading, drawEndScreenBackground, newImage, MuteIcon } from './commonui.js'
 import { createButton, clearButtons, buttonDraw } from './button.js';
 
 const canvasElement = document.getElementById("secret");
 const context = canvasElement.getContext("2d");
 const { width, height } = canvasElement;
 
+const muteIcon = MuteIcon();
+muteIcon.resetBackground();
 const monstrosityImage = newImage("./images/ac.jpg");
 
 const abilityImage = [
@@ -31,9 +33,37 @@ function imagesLoaded(...args) {
     return unloadedTotal == 0;
 }
 
-export function drawMechanicsOverview(back, start) {
-  if ( !imagesLoaded(back, start) ) return;
-  clearButtons();
+function drawAbilityWithIcon(image, title, cooldown, desc, x, y) {
+  const iconSize = 32;
+  const spacing = 12;
+  let titleWidth = 0;
+
+  context.save();
+
+  context.drawImage(image,x,y,iconSize,iconSize);
+
+  context.font = "bold 16px 'Segoe UI', Arial";
+  context.textBaseline = "top";
+  context.textAlign = "left";
+  context.fillStyle = "#00B4FF";
+  context.shadowColor = "rgba(0,60,120,0.7)";
+  context.shadowBlur = 2;
+
+  titleWidth = context.measureText(title).width;
+  context.fillText(title, x + iconSize + spacing, y);
+
+  context.font = "italic 12px 'Segoe UI', Arial";
+  context.fillText(cooldown, x + iconSize + titleWidth + spacing*1.5, y+2);
+
+  context.font = "16px 'Segoe UI', Arial";
+  context.fillText(desc, x + iconSize + spacing, y + 18);
+
+  context.restore();
+}
+
+export function drawMechanicsOverview() {
+  if ( !imagesLoaded() ) return;
+  
   context.clearRect(0, 0, width, height);
 
   drawEndScreenBackground({
@@ -69,10 +99,10 @@ export function drawMechanicsOverview(back, start) {
 
   drawAbilityWithIcon(monstrosityImage, "Amber Explosion", "[48s CD, 2s cast]", "AoE Explosion dealing ~500k to all raid members.", 80, 150);
 
-  drawAbilityWithIcon(abilityImage[0], "[1] Amber Strike", "[6s CD]", "Interrupts Amber Explosion, applies stacking damage taken debuff.", 80, 240);
+  drawAbilityWithIcon(abilityImage[0], "[1] Amber Strike", "[6s CD, melee range]", "Interrupts Amber Explosion, applies stacking damage taken debuff.", 80, 240);
   drawAbilityWithIcon(abilityImage[1], "[2] Struggle for Control", "[6s CD, 8 willpower]", "Interrupts your own Amber Explosion every 13s.", 80, 290);
-  drawAbilityWithIcon(abilityImage[2], "[3] Consume Amber", "", "Refills willpower (50 willpower phase 3, 20 willpower otherwise)", 80, 340);
-  drawAbilityWithIcon(abilityImage[3], "[4] Break Free", "", "Exits construct at 20% HP. Also interrupts self.", 80, 390);
+  drawAbilityWithIcon(abilityImage[2], "[3] Consume Amber", "[melee range]", "Refills willpower (50 willpower phase 3, 20 willpower otherwise)", 80, 340);
+  drawAbilityWithIcon(abilityImage[3], "[4] Break Free", "[<20% hp]", "Exits construct. Also interrupts self.", 80, 390);
 
   const notesBoxX = 70;
   const notesBoxY = 490;
@@ -99,12 +129,13 @@ export function drawMechanicsOverview(back, start) {
   context.textBaseline = "top";
 
   const lines = [
+    "🎯 Your primary target is Amber Monstrosity, mostly ignore Un'Sok until phase 3.",
     "💀 Ensure you interrupt every Amber Monstrosity-Amber Explosion.",
     "⚠️ When Amber Explosion cooldown is nearing, save Amber Strike CD to interrupt.",
     "😵 You cast your own AE every 13s, interrupt with [2]. Watch your willpower!",
     "🧟 As a non-tank, try not to use Consume Amber [3] at all until phase 3."
   ];
-  let y = notesBoxY + 20;
+  let y = notesBoxY+10;
   for (const line of lines) {
     context.fillText(line, notesBoxX + 20, y);
     y += 26;
@@ -112,7 +143,14 @@ export function drawMechanicsOverview(back, start) {
 
   context.restore();
 
-  // Buttons
+
+  buttonDraw();
+  muteIcon.draw();
+}
+
+export function mechanics(back, start) {
+  clearButtons();
+
   createButton({
     x: 220,
     y: height - 80,
@@ -121,7 +159,10 @@ export function drawMechanicsOverview(back, start) {
     text: "Back",
     color: "#5ed65e",
     textColor: "#ffffff",
-    onClick: () => back()
+    onClick: () => { 
+      muteIcon.detach();
+      back();
+    }
   });
 
   createButton({
@@ -132,39 +173,12 @@ export function drawMechanicsOverview(back, start) {
     text: "Start",
     color: "#ff5740",
     textColor: "#ffffff",
-    onClick: () => start()
+    onClick: () => {
+      muteIcon.detach();
+      start();
+    }
   });
 
-  buttonDraw();
-}
-
-function drawAbilityWithIcon(image, title, cooldown, desc, x, y) {
-  const iconSize = 32;
-  const spacing = 12;
-  let titleWidth = 0;
-
-  context.save();
-
-  // Placeholder icon box
-  // context.fillStyle = "#444";
-  // context.fillRect(x, y, iconSize, iconSize);
-  context.drawImage(image,x,y,iconSize,iconSize);
-
-  context.font = "bold 16px 'Segoe UI', Arial";
-  context.textBaseline = "top";
-  context.textAlign = "left";
-  context.fillStyle = "#00B4FF";
-  context.shadowColor = "rgba(0,60,120,0.7)";
-  context.shadowBlur = 2;
-
-  titleWidth = context.measureText(title).width;
-  context.fillText(title, x + iconSize + spacing, y);
-
-  context.font = "italic 12px 'Segoe UI', Arial";
-  context.fillText(cooldown, x + iconSize + titleWidth + spacing*1.5, y+2);
-
-  context.font = "16px 'Segoe UI', Arial";
-  context.fillText(desc, x + iconSize + spacing, y + 18);
-
-  context.restore();
+  muteIcon.attach();
+  drawMechanicsOverview();
 }

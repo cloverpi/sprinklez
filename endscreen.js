@@ -110,8 +110,6 @@ export function win(stats) {
     colors.paragraph, 200, 160, );
 
 
-  // console.log(encodeURIComponent(window.btoa(JSON.stringify(stats))));
-
   const winReason = 
   `AmberStrike Total: ${stats.amberStrike}\n
   AmberStrike Monstrosity: ${stats.amberStrikeMonstrosity}\n

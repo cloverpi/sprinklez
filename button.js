@@ -3,7 +3,7 @@ import { InputLock } from './commonui.js'
 const canvas = document.querySelector("canvas");
 const ctx = canvas.getContext("2d");
 const buttons = [];
-const padding = 13;
+const basePadding = 13;
 
 export function createButton({
   x,
@@ -13,14 +13,19 @@ export function createButton({
   color = "#ffcc33",
   textColor = "#222",
   simulationLock = false,
-  onClick = () => {}
+  onClick = () => {},
+  scale = 1
 }) {
-  const height = 40;
-  const depth = 30;
-  const radius = 12;
-
+  // All dimensions scale accordingly
+  const height = 40 * scale;
+  const depth = 30 * scale;
+  const radius = 12 * scale;
   const button = {
-    x, y, width, height, depth, radius,
+    x, y,
+    width: width * scale,
+    height,
+    depth,
+    radius,
     text, color, textColor, onClick,
     pressed: false,
     hitPath: null,
@@ -30,6 +35,7 @@ export function createButton({
     backgroundWidth: 0,
     backgroundHeight: 0,
     simulationLock,
+    scale,
 
     contains(mx, my) {
       return this.hitPath && ctx.isPointInPath(this.hitPath, mx, my);
@@ -61,11 +67,12 @@ export function clearButtons() {
 }
 
 function getButtonBoundingBox(b) {
+  const pad = basePadding * (b.scale || 1);
   return {
-    x: Math.floor(b.x - padding),
-    y: Math.floor(b.y - padding),
-    width: Math.ceil(b.width + padding * 2),
-    height: Math.ceil(b.height + b.depth + padding * 2)
+    x: Math.floor(b.x - pad),
+    y: Math.floor(b.y - pad),
+    width: Math.ceil(b.width + pad * 2),
+    height: Math.ceil(b.height + b.depth + pad * 2)
   };
 }
 
@@ -95,20 +102,20 @@ function redrawAllButtons() {
 
 function drawButtonShape(b) {
   ctx.save();
-  const shiftY = -6;
-  const widen = 6;
+  const shiftY = -6 * b.scale;
+  const widen = 6 * b.scale;
   const yOffset = b.pressed ? b.depth * 0.6 : 0;
 
   const top = [
-    [b.x + 20, b.y + yOffset],
-    [b.x + b.width - 20, b.y + yOffset],
+    [b.x + 20 * b.scale, b.y + yOffset],
+    [b.x + b.width - 20 * b.scale, b.y + yOffset],
     [b.x + b.width, b.y + b.height + yOffset],
     [b.x, b.y + b.height + yOffset],
   ];
 
   const front = [
-    [top[3][0] + 3, top[3][1] + shiftY],
-    [top[2][0] - 3, top[2][1] + shiftY],
+    [top[3][0] + 3 * b.scale, top[3][1] + shiftY],
+    [top[2][0] - 3 * b.scale, top[2][1] + shiftY],
     [top[2][0] + widen / 2, top[2][1] + b.depth + shiftY],
     [top[3][0] - widen / 2, top[3][1] + b.depth + shiftY],
   ];
@@ -118,11 +125,11 @@ function drawButtonShape(b) {
   ctx.fillStyle = shadeColor(b.color, -20);
   ctx.fill(frontPath);
 
-  const gradLeft = ctx.createLinearGradient(front[0][0], 0, front[0][0] + 20, 0);
+  const gradLeft = ctx.createLinearGradient(front[0][0], 0, front[0][0] + 20 * b.scale, 0);
   gradLeft.addColorStop(0, "rgba(0,0,0,0.2)");
   gradLeft.addColorStop(1, "transparent");
 
-  const gradRight = ctx.createLinearGradient(front[1][0], 0, front[1][0] - 20, 0);
+  const gradRight = ctx.createLinearGradient(front[1][0], 0, front[1][0] - 20 * b.scale, 0);
   gradRight.addColorStop(0, "rgba(0,0,0,0.2)");
   gradRight.addColorStop(1, "transparent");
 
@@ -132,10 +139,15 @@ function drawButtonShape(b) {
   ctx.fill(frontPath);
 
   const topPath = new Path2D();
-  roundTrapezoidPath(topPath, top, { tl: 8, tr: 8, br: 18, bl: 18 });
+  roundTrapezoidPath(topPath, top, {
+    tl: 8 * b.scale,
+    tr: 8 * b.scale,
+    br: 18 * b.scale,
+    bl: 18 * b.scale
+  });
 
   ctx.save();
-  ctx.translate(0, 2);
+  ctx.translate(0, 2 * b.scale);
   ctx.fillStyle = shadeColor(b.color, -10);
   ctx.fill(topPath);
   ctx.restore();
@@ -145,9 +157,10 @@ function drawButtonShape(b) {
 
   ctx.lineJoin = "round";
   ctx.strokeStyle = shadeColor(b.color, -40);
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2 * b.scale;
   ctx.stroke(topPath);
 
+  // Hit Path (scaled)
   const minX = Math.min(...top.map(p => p[0]), ...front.map(p => p[0]));
   const maxX = Math.max(...top.map(p => p[0]), ...front.map(p => p[0]));
   const minY = Math.min(...top.map(p => p[1]), ...front.map(p => p[1]));
@@ -156,16 +169,22 @@ function drawButtonShape(b) {
   hitPath.rect(minX, minY, maxX - minX, maxY - minY);
   b.hitPath = hitPath;
 
+  // Draw text (scaled)
   ctx.save();
   ctx.fillStyle = b.textColor;
-  ctx.font = "bold 20px Arial";
+  ctx.font = `bold ${20 * b.scale}px Arial`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(b.text, b.x + b.width / 2, b.y + b.height / 2 + yOffset);
+  ctx.fillText(
+    b.text,
+    b.x + b.width / 2,
+    b.y + b.height / 2 + yOffset
+  );
   ctx.restore();
   ctx.restore();
 }
 
+// Mouse events (no scaling needed here)
 canvas.addEventListener("mousedown", (e) => {
   if (InputLock.isLocked()) return;
   const { left, top } = canvas.getBoundingClientRect();
@@ -190,6 +209,7 @@ canvas.addEventListener("mouseup", (e) => {
   });
 });
 
+// Helper functions remain as before, but use scaled radii as needed
 function roundTrapezoidPath(path, points, radius) {
   const [tl, tr, br, bl] = points;
   const r = typeof radius === "number" ? { tl: radius, tr: radius, br: radius, bl: radius } : radius;

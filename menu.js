@@ -1,11 +1,15 @@
 import { title } from './title.js';
 import { controls } from './howto.js';
-import { drawMechanicsOverview } from './mechanics.js';
+import { mechanics } from './mechanics.js';
 import { gameStartInit } from './amber.js';
+import { AudioManager } from './commonui.js';
 
+function setup(){
+    const muted = getCookie("muted").toLowerCase() == "true" ? true : false;
+    AudioManager.muteAll(muted);
+}
 
 export function startMenu(){
-    title(drawMechanicsOverview, controls, gameStartInit);
-    // drawTitle();
-    // drawControls( title(drawMechanicsOverview, controls, callback) );
+    setup();
+    title(mechanics, controls, gameStartInit);
 }

@@ -1,7 +1,7 @@
 import * as ai from './ai.js';
 import { win, loss } from './endscreen.js';
 import { startMenu } from './menu.js';
-import { newImage, newAudio, AudioManager } from './commonui.js'
+import { newImage, newAudio, AudioManager, MuteIcon } from './commonui.js'
 import { clearButtons } from './button.js';
 
 const { Named, Selector, Sequence, Condition, Action, inRange, unitInRange, applyVelocityFromGoals, performAttack } = ai
@@ -19,6 +19,7 @@ const meleeRange = 20;
 const maxWiggle = 8 * Math.PI / 180; 
 const wiggleAmount = 0.8 * Math.PI / 180;
 
+const muteIcon = MuteIcon({autoRedraw: false, x: 770, y: 6, size: 20});
 const music = [
     newAudio("sounds/music/1.mp3", 0.3),
     newAudio("sounds/music/4.mp3", 0.3),
@@ -241,9 +242,7 @@ const gameEvents = {
                                     
                                     puddle.x = Math.round(Math.random()*400)-200 + units["amberPuddle"].x;
                                     puddle.y = Math.round(Math.random()*250)-125 + units["amberPuddle"].y;
-                                    console.log(units["monstrosity"].hp/units["monstrosity"].maxhp);
                                     if (units["monstrosity"].active && units["monstrosity"].hp/units["monstrosity"].maxhp < 0.10) {
-                                        console.log('trying to spawn p3 amber');
                                         const puddleInterval = setInterval(()=>{
                                             if ( !units["monstrosity"].active ) {
                                                 clearInterval(puddleInterval);
@@ -252,7 +251,6 @@ const gameEvents = {
                                             }
                                         },randomBellCurve(1000,5000,0.75));
                                     } else {
-                                        console.log('spawning normal amber');
                                         puddle.spawnTime = Date.now();
                                         puddles.push(puddle);
                                     }
@@ -384,7 +382,6 @@ const units = {
                                                                 }
                                                                 console.log("KAAAABOOOOOOM");
                                                                 u.casting = -1
-                                                                console.log('clearing cast: Amber Explosion');
                                                             };
                                                         }, u.spells[u.casting].castTime * 1000);
                                         return { status: "casting" };
@@ -766,14 +763,10 @@ let spellKeys ={
 }
 
 function playAmbience() {
-    
-    function play(){
-        for (const a of ambience) {
-            a.loop = true;
-            AudioManager.play(a);
-        }
+    for (const a of ambience) {
+        a.loop = true;
+        AudioManager.play(a);
     }
-    play();
 }
 
 function playMusic() {
@@ -783,7 +776,6 @@ function playMusic() {
         AudioManager.play(music[musicIndex], ()=>{ 
             musicIndex++;
             if (musicIndex >= music.length) musicIndex = 0;
-            console.log(`after music index: ${musicIndex}`);
             play();
         });
     }
@@ -813,6 +805,7 @@ export function gameStartInit(){
     startTime = Date.now();
     lastUpdate = Date.now();
     clearButtons();
+    AudioManager.stopAll();
 
     //player fussing.
     units["redPlayer"].sound = units["redPlayer"].raiderSound;
@@ -835,6 +828,7 @@ export function gameStartInit(){
     draw();
     playMusic();
     playAmbience();
+    muteIcon.attach();
 }
 
 function draw() {
@@ -871,6 +865,8 @@ function draw() {
         drawFakeBigWigs(currentTime);
         drawCastBars(currentTime);
         drawRaidWarning();
+
+        muteIcon.draw();
     }
     
     requestAnimationFrame(draw);
@@ -1397,7 +1393,6 @@ function update(time) {
     move(units["redPlayer"]);
     if (!units["redPlayer"].amber && (units["redPlayer"].velocityX || units["redPlayer"].velocityY)) {
         units["redPlayer"].casting = -1;
-        console.log('clearing cast: Movement');
         AudioManager.stop(units["redPlayer"].spells[1].sound.precast);
     }
     move(units["tank"]);
@@ -1450,14 +1445,16 @@ document.addEventListener("keydown", e => {
 });
 
 document.addEventListener("keyup", event => {
-    if (typeof movementKeys[event.key] === 'undefined') return;
-    movementKeys[event.key] = false;
+    const key = String(event.key).toLowerCase();
+    if (typeof movementKeys[key] === 'undefined') return;
+    movementKeys[key] = false;
 });
 
 document.addEventListener("keypress", event => {
-    if (typeof movementKeys[event.key] === 'undefined') return;
-    if (movementKeys[event.key] === true) return;
-    movementKeys[event.key] = true;
+    const key = String(event.key).toLowerCase();
+    if (typeof movementKeys[key] === 'undefined') return;
+    if (movementKeys[key] === true) return;
+    movementKeys[key] = true;
 });
 
 document.addEventListener("keypress", event => {
@@ -1692,7 +1689,6 @@ function startCooldown(button) {
 }
 
 function frostBolt() {
-    console.log('frostbolt');
     const actionbarfrostbolt = document.querySelector("#actionbarFrostbolt");
     if (actionbarfrostbolt.querySelector(".ability")._cooldownRunning) return;
     if (units["redPlayer"].amber) return;
