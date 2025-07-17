@@ -238,6 +238,16 @@ export function roundRect(x, y, w, h, r) {
   context.lineTo(x, y + r);
   context.quadraticCurveTo(x, y, x + r, y);
   context.closePath();
+
+  return {
+    boxX: x,
+    boxY: y,
+    boxWidth: w,
+    boxHeight: h,
+    contentBottom: y+h,
+    centerX: x + w / 2,
+  };
+
 }
 
 export function drawCopyButton(x, y, textToCopy, callback) {

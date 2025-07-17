@@ -1,4 +1,4 @@
-import { drawLegendLine, drawEndScreenHeading, cheeseParagraph, drawEndScreenBackground, drawFooter, newImage, newAudio, AudioManager, drawCopyButton } from './commonui.js'
+import { drawLegendLine, drawEndScreenHeading, cheeseParagraph, drawEndScreenBackground, drawFooter, newImage, newAudio, AudioManager, drawCopyButton, roundRect } from './commonui.js'
 import { createButton, clearButtons, buttonDraw } from './button.js';
 
 const LZString = window.LZString;
@@ -47,6 +47,78 @@ function drawEndScreenImage(colors, onLoadCallback) {
   }
 }
 
+function formatTime(ms) {
+    const totalSeconds = Math.floor(ms / 1000);
+    const hrs = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+
+    const hh = hrs.toString().padStart(2, '0');
+    const mm = mins.toString().padStart(1, '0');
+    const ss = secs.toString().padStart(2, '0');
+
+    return `${mm}:${ss}`;
+  }
+
+function drawPoints({
+  text,
+  x,
+  y,
+  angle = 0,
+  font = "bold 36px 'Segoe UI', Arial",
+  minScale = 1,
+  maxScale = 1.23,
+  pulseSpeed = 1.2,
+  boxWidth = 220,
+  boxHeight = 90,
+  shadowColor,
+  shadowBlur = 25,
+  fillColor,
+  highlightColor,
+  strokeColor,
+  lineWidth = 1.5
+}) {
+  const grabX = Math.round(x - boxWidth / 2);
+  const grabY = Math.round(y - boxHeight / 2);
+  const grabW = Math.round(boxWidth);
+  const grabH = Math.round(boxHeight);
+  const bg = context.getImageData(grabX, grabY, grabW, grabH);
+
+  let start = Date.now();
+
+  function draw() {
+    const now = Date.now();
+    const elapsed = (now - start) / 1000;
+    const t = (elapsed * Math.PI * 2) / pulseSpeed;
+    const scale = minScale + (maxScale - minScale) * (0.5 + 0.5 * Math.sin(t));
+    context.putImageData(bg, grabX, grabY);
+
+    context.save();
+    context.translate(x, y);
+    context.rotate(angle);
+    context.scale(scale, scale);
+    context.font = font;
+    context.textBaseline = "middle";
+    context.textAlign = "center";
+    context.shadowColor = shadowColor;
+    context.shadowBlur = shadowBlur;
+    context.fillStyle = fillColor;
+    context.fillText(text, 0, 0);
+    context.shadowColor = "transparent";
+    context.fillStyle = highlightColor;
+    context.fillText(text, 0, 0);
+    context.lineWidth = lineWidth;
+    context.strokeStyle = strokeColor;
+    context.strokeText(text, 0, 0);
+    context.restore();
+
+    requestAnimationFrame(draw);
+  }
+
+  draw();
+}
+
+
 export function win(stats) {
   AudioManager.play(victorySound);
   const colors = {
@@ -60,6 +132,7 @@ export function win(stats) {
       boxFill: "rgba(0,180,255,0.15)",
       boxShadow: "rgba(0,130,200,0.6)",
       textFill: "#00B4FF",
+      textFillAlternate: "#0097d6",
       textShadow: "rgba(0,60,120,0.7)",
     },
     legend: {
@@ -110,30 +183,89 @@ export function win(stats) {
     colors.paragraph, 200, 160, );
 
 
-  const winReason = 
-  `AmberStrike Total: ${stats.amberStrike}\n
-  AmberStrike Monstrosity: ${stats.amberStrikeMonstrosity}\n
-  AmberStrike Un'Sok: ${stats.amberStrikeUnsok}\n
-  Self Interrupts : ${stats.selfInterrupt}\n
-  Monstrosity Interrupts: ${stats.selfInterrupt}
-  `
-  const boxStatsInfo = cheeseParagraph(
-    winReason,
-    colors.paragraph, boxInfo.boxX, boxInfo.boxY + boxInfo.boxHeight + 20, boxInfo.boxWidth, 160
-  );
+  const rows = [
+                ["AmberStrike Total", stats.amberStrike ?? 0, stats.amberStrike * 10],
+                ["AmberStrike Monstrosity", stats.amberStrikeMonstrosity ?? 0, stats.amberStrikeMonstrosity * 150],
+                ["AmberStrike Un'Sok", stats.amberStrikeUnsok ?? 0, stats.amberStrikeUnsok * 15],
+                ["Self Interrupts", stats.selfInterrupt ?? 0, stats.selfInterrupt * 50],
+                ["Self Explosions", stats.selfExplosion ?? 0, (-(stats.selfExplosion * 250))+250],
+                ["Monstrosity Interrupts", stats.interrupt ?? 0, stats.interrupt * 100],
+                ["Consume Amber", stats.consumeAmber ?? 0, (stats.consumeAmber * -1)+25],
+                ["Time to Kill ", formatTime(stats.timePlayed ?? 0), Math.floor(((stats.timePlayed/1000) * -1)+500)],
+            ];
+
+  const totalPoints = rows.reduce((sum, [, , pts]) => sum + pts, 0);
+
+  context.fillStyle = colors.paragraph.boxFill;
+  roundRect(boxInfo.boxX, boxInfo.boxY + boxInfo.boxHeight + 20,  boxInfo.boxWidth, 160, 22);
+  context.fill();
+
+  context.shadowColor = colors.boxShadow;
+  context.shadowBlur = 15;
+  context.shadowOffsetX = 0;
+  context.shadowOffsetY = 0;
+  context.globalCompositeOperation = "source-atop";
+  const boxStatsInfo = roundRect(boxInfo.boxX, boxInfo.boxY + boxInfo.boxHeight + 20,  boxInfo.boxWidth, 160, 22);
+  context.fill();
+
+  let rowY = boxStatsInfo.boxY + 8;
+  let rowX = boxStatsInfo.boxX + 20;
+  const lineHeight = 18;
+
+  context.save();
+  context.font = "18px 'Segoe UI', Arial";
+  context.fillStyle = colors.paragraph.textFill;
+  context.textBaseline = "top";
+  context.textAlign = "left";
+  context.shadowColor = colors.paragraph.textShadow;
+  context.shadowBlur = 3;
+  context.shadowOffsetX = 1;
+  context.shadowOffsetY = 1;
+
+  for (let i = 0; i < rows.length; i++) {
+    const color = Math.floor(i/2) == i/2 ? colors.paragraph.textFill : colors.paragraph.textFillAlternate;
+    const [ name, value, points ] = rows[i];
+
+    context.fillStyle = color;
+    context.fillText(name, rowX, rowY);
+    context.fillText(value, rowX+220, rowY);
+    context.fillText(points+"pts", rowX+270, rowY);
+    rowY += lineHeight;
+  }
+  context.restore();
+
+
+  drawPoints({
+    text: totalPoints + 'pts',
+    x: boxStatsInfo.boxX + 415,
+    y: boxStatsInfo.boxY + (boxStatsInfo.boxHeight / 2),
+    angle: -(Math.PI / 4),
+    font: "bold 36px 'Segoe UI', Arial",
+    minScale: 1,
+    maxScale: 1.05,
+    pulseSpeed: 3,
+    boxWidth: 130,
+    boxHeight: 130,
+    shadowColor: colors.heading.shadow,
+    shadowBlur: 5,
+    fillColor: colors.fill,
+    highlightColor: colors.heading.highlight,
+    strokeColor: colors.heading.stroke,
+    lineWidth: 1.5
+  });
 
   const objExport = { 
                       asm: stats.amberStrikeMonstrosity,
                       asu: stats.amberStrikeUnsok,
                       ca: stats.consumeAmber,
-                      i: stats.selfInterrupt,
+                      i: stats.interrupt,
                       se: stats.selfExplosion,
                       si: stats.selfInterrupt,
                       t: stats.time,
                       tp: stats.timePlayed,
                     }
   
-  const drawCopy = drawCopyButton(boxStatsInfo.boxX+450, boxStatsInfo.boxY+50, `https://cloverpi.github.io/sprinklez/verify.html?win=${LZString.compressToEncodedURIComponent((JSON.stringify(objExport)))}`);
+  const drawCopy = drawCopyButton(boxStatsInfo.boxX+500, boxStatsInfo.boxY+40, `https://cloverpi.github.io/sprinklez/verify.html?win=${LZString.compressToEncodedURIComponent((JSON.stringify(objExport)))}`);
   drawCopy();
 
   drawLegendLine(boxStatsInfo.boxX, boxStatsInfo.boxY-20, boxStatsInfo.boxWidth, boxStatsInfo.boxHeight, colors.legend);
