@@ -144,7 +144,6 @@ export function drawTitle() {
   createGridPattern("rgba(255,80,80,0.2)");
   context.restore();
 
-  // === Glowing Border for ENEMY Section ===
   context.save();
   context.strokeStyle = "rgba(255, 80, 80, 0.4)";
   context.lineWidth = 4;
@@ -179,7 +178,6 @@ export function drawTitle() {
   createGridPattern("rgba(0,180,255,0.2)");
   context.restore();
 
-  // === Glowing Border for PLAYER Section ===
   context.save();
   context.strokeStyle = "rgba(0, 180, 255, 0.4)";
   context.lineWidth = 4;
@@ -194,9 +192,6 @@ export function drawTitle() {
   context.closePath();
   context.stroke();
   context.restore();
-
-
-  // === Feathered Divider Shadow ===
   const p1 = { x: 0, y: leftY };
   const p2 = { x: width, y: rightY };
 
@@ -275,7 +270,6 @@ export function drawTitle() {
   drawBackgroundGrid("#106197", width, bottomHeight); 
   context.restore();
 
-  // === Draw VS and Labels ===
   context.font = "bold 90px sans-serif";
   context.fillStyle = "#fff";
   context.textAlign = "center";
@@ -288,7 +282,6 @@ export function drawTitle() {
   drawPatreonImage(683, 690);
   drawGithub(0, 690);
 
-  // === Draw Visual Buttons on Black Section ===
   buttonDraw();
   muteIcon.draw();
 }
@@ -366,6 +359,7 @@ function cleanupTitle(){
 
 function enableMusicAutoplayOnUserInput() {
   const unlock = () => {
+    music.loop = "true";
     AudioManager.play(music);
     window.removeEventListener('pointerdown', unlock);
     window.removeEventListener('keydown', unlock);

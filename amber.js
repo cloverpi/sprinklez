@@ -764,7 +764,7 @@ let spellKeys ={
 
 function playAmbience() {
     for (const a of ambience) {
-        a.loop = true;
+        a.loop = "true";
         AudioManager.play(a);
     }
 }
