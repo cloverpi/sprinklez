@@ -416,7 +416,13 @@ export function drawLegendLine(boxX, boxY, boxWidth, boxHeight, colors) {
   context.restore();
 }
 
-export function drawEndScreenHeading(text, centerX, y, colors) {
+export function drawEndScreenHeading(text, centerX, y, 
+  colors = {
+    shadow: "rgba(0,180,255,0.8)",
+    fill: "#00B4FF",
+    highlight: "#e0f7ff",
+    stroke: "#a0e0ff"
+  }) {
   context.save();
   context.font = "bold 72px 'Segoe UI', Arial";
   context.textBaseline = "top";

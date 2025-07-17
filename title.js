@@ -1,4 +1,4 @@
-import { newImage, drawBackgroundGrid, roundRect, InputLock, newAudio, AudioManager, MuteIcon } from './commonui.js';
+import { newImage, drawBackgroundGrid, drawEndScreenHeading, InputLock, newAudio, AudioManager, MuteIcon } from './commonui.js';
 import { createButton, clearButtons, buttonDraw } from './button.js';
 import { startMenu } from './menu.js';
 
@@ -13,10 +13,6 @@ const rightY = topHeight / 2 - 30;
 const featherThickness = 15;
 
 const hitZones = [];
-
-function createGridPattern(grid) {
-    drawBackgroundGrid(grid);
-}
 
 const muteIcon = MuteIcon();
 const music = newAudio("sounds/music/snow.mp3", 0.3);
@@ -141,7 +137,7 @@ export function drawTitle() {
   gradEnemy.addColorStop(1, "#110000");
   context.fillStyle = gradEnemy;
   context.fillRect(0, 0, width, height);
-  createGridPattern("rgba(255,80,80,0.2)");
+  drawBackgroundGrid("rgba(255,80,80,0.2)");
   context.restore();
 
   context.save();
@@ -175,7 +171,7 @@ export function drawTitle() {
   context.fillStyle = gradPlayer;
   context.fillRect(0, 0, width, height);
 
-  createGridPattern("rgba(0,180,255,0.2)");
+  drawBackgroundGrid("rgba(0,180,255,0.2)");
   context.restore();
 
   context.save();
@@ -286,69 +282,136 @@ export function drawTitle() {
   muteIcon.draw();
 }
 
+function LoadingScreen(mechanics, controls, start) {
+  const image = newImage("images/raider.webp");
+
+  function drawOrbitingImage({centerX, centerY, radius, angleRad, imgWidth, imgHeight}) {
+    const x = centerX + Math.cos(angleRad) * radius;
+    const y = centerY + Math.sin(angleRad) * radius;
+    context.save();
+    context.translate(x, y);
+    context.rotate(angleRad + Math.PI / 2);
+    context.drawImage(image, -imgWidth / 2, -imgHeight, imgWidth, imgHeight);
+    context.restore();
+  }
+
+  let angle = 0;
+  let UPDATEFREQ = 16.67;  //~60fps
+  let lastUpdate = Date.now();
+  const text="Loading...";
+  const centerX = width/2;
+  const centerY = height/2;
+  function animate() {
+    if ( lastUpdate+Date.now() >= UPDATEFREQ ) {
+      lastUpdate = Date.now();
+      context.clearRect(0, 0, width, height);
+      drawBackgroundGrid("rgba(0,180,255,0.2)");
+
+      context.save();
+      context.font = "bold 48px 'Segoe UI', Arial";
+      context.textBaseline = "middle";
+      context.textAlign = "center";
+
+      context.shadowColor = "rgba(0,180,255,0.8)";
+      context.shadowBlur = 25;
+      context.fillStyle = "#00B4FF";
+      context.fillText(text, centerX, centerY);
+
+      context.shadowColor = "transparent";
+      context.fillStyle = "#e0f7ff";
+      context.fillText(text, centerX, centerY);
+
+      context.lineWidth = 1.5;
+      context.strokeStyle = "#a0e0ff";
+      context.strokeText(text, centerX, centerY);
+      context.restore();
+
+      drawOrbitingImage({
+        centerX: width/2,
+        centerY: height/2,
+        radius: 120,
+        angleRad: angle,
+        imgWidth: 64,
+        imgHeight: 64
+      });
+        angle += 0.025;
+    }
+    if (document.readyState != "complete"){ 
+      requestAnimationFrame(animate); 
+    } else {
+      title(mechanics,controls,start);
+    }
+  }
+  animate();
+}
+
 export function title(mechanics, controls, start) {
-  clearButtons();
+  if (document.readyState == "complete") {
+      clearButtons();
 
-  const canvasCenterX = canvasElement.width / 2;
+      const canvasCenterX = canvasElement.width / 2;
 
-  const smallButtonWidth = 160 * 0.75;
-  const largeButtonWidth = 280 * 1.11;
+      const smallButtonWidth = 160 * 0.75;
+      const largeButtonWidth = 280 * 1.11;
 
-  // Verticals
-  const mechanicsY = topHeight + 80;
-  const controlsY = topHeight + 80;
-  const startY = topHeight + 140;
+      // Verticals
+      const mechanicsY = topHeight + 80;
+      const controlsY = topHeight + 80;
+      const startY = topHeight + 140;
 
-  createButton({
-    x: canvasCenterX - smallButtonWidth - 10, // left of center
-    y: mechanicsY,
-    width: 160,
-    height: 40,
-    scale: 0.75,
-    text: "Mechanics",
-    color: "#4588c7",
-    textColor: "#fff",
-    onClick: () => {
-      cleanupTitle();
-      mechanics(startMenu, start);
-    }
-  });
+      createButton({
+        x: canvasCenterX - smallButtonWidth - 10, // left of center
+        y: mechanicsY,
+        width: 160,
+        height: 40,
+        scale: 0.75,
+        text: "Mechanics",
+        color: "#4588c7",
+        textColor: "#fff",
+        onClick: () => {
+          cleanupTitle();
+          mechanics(startMenu, start);
+        }
+      });
 
-  createButton({
-    x: canvasCenterX + 10, // right of center
-    y: controlsY,
-    width: 160,
-    height: 40,
-    scale: 0.75,
-    text: "Controls",
-    color: "#66cc66",
-    textColor: "#fff",
-    onClick: () => {
-      cleanupTitle();
-      controls(startMenu, start);
-    }
-  });
+      createButton({
+        x: canvasCenterX + 10, // right of center
+        y: controlsY,
+        width: 160,
+        height: 40,
+        scale: 0.75,
+        text: "Controls",
+        color: "#66cc66",
+        textColor: "#fff",
+        onClick: () => {
+          cleanupTitle();
+          controls(startMenu, start);
+        }
+      });
 
-  createButton({
-    x: canvasCenterX - (largeButtonWidth / 2),
-    y: startY,
-    width: 280,
-    height: 40,
-    scale: 1.11,
-    text: "Start",
-    color: "#ff1e00",
-    textColor: "#fff",
-    onClick: () => {
-      cleanupTitle();
-      start();
-    }
-  });
+      createButton({
+        x: canvasCenterX - (largeButtonWidth / 2),
+        y: startY,
+        width: 280,
+        height: 40,
+        scale: 1.11,
+        text: "Start",
+        color: "#ff1e00",
+        textColor: "#fff",
+        onClick: () => {
+          cleanupTitle();
+          start();
+        }
+      });
 
-  canvasElement.addEventListener("mouseup", handleMouseUp);
-  canvasElement.addEventListener("mousemove", handleMouseMove);
-  muteIcon.attach();
+      canvasElement.addEventListener("mouseup", handleMouseUp);
+      canvasElement.addEventListener("mousemove", handleMouseMove);
+      muteIcon.attach();
 
-  drawTitle();
+      drawTitle();
+  } else {
+    LoadingScreen(mechanics, controls, start);
+  }
 }
 
 function cleanupTitle(){
@@ -369,3 +432,5 @@ function enableMusicAutoplayOnUserInput() {
 }
 
 enableMusicAutoplayOnUserInput();
+
+
