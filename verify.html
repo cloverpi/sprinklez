@@ -4,30 +4,73 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Completed!</title>
+  <link rel="icon" type="image/png" href="favicon.png" sizes="32x32">
   <style>
     body {
-        margin: 0;
-        padding: 0;
-        font-family: 'Segoe UI', sans-serif;
-        background-color: #0a0f1c;
-        background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
-                            linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
-        background-size: 40px 40px;
-        color: #9be7ff;
-        height: 100vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #0a0f1c;
+      background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+      background-size: 40px 40px;
+      color: #9be7ff;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
-    .container {
-        position: relative;
-        max-width: 900px;
-        width: 100%;
-        padding: 2rem;
-        display: flex;
+    .center-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 1rem;
+      max-width: 700px;
+      width: 100%;
+      padding: 2rem;
+      position: relative;
+    }
+
+    .image-wrapper {
+      position: relative; 
+      flex-shrink: 0;
+      margin-right: 40px;
+      height: 100%;
+    }
+
+    .hero-image {
+      position: absolute;
+      top: 50%;
+      transform: translateY(50%);
+      width: 120px;
+      filter: drop-shadow(0 0 20px #00d9ff);
+      pointer-events: none;
+    }
+
+    @media (max-width: 768px) {
+      .center-wrap {
         flex-direction: column;
         align-items: center;
+      }
+      .image-wrapper {
+        
+        margin-right: 0;
+        margin-top: -50px;
+        margin-bottom: 1rem;
+      }
+      .hero-image {
+        transform: translateX(-300%);
+        width: 60px;
+        top: 30px;
+      }
+    }
+
+    .content-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     h1 {
@@ -37,22 +80,16 @@
       margin-bottom: 2rem;
     }
 
-    .message-box, .stats-box {
+    .stats-box {
       background: rgba(0, 70, 110, 0.4);
       padding: 1.5rem 2rem;
       border-radius: 1rem;
-      max-width: 600px;
-      margin-bottom: 1rem;
-      box-shadow: 0 0 10px rgba(0,0,0,0.4);
-    }
-
-    .message-box {
-      font-size: 1rem;
-    }
-
-    .stats-box {
+      width: 100%;
+      max-width: 500px;
       font-size: 1rem;
       line-height: 1.6;
+      margin-bottom: 1rem;
+      box-shadow: 0 0 10px rgba(0,0,0,0.4);
     }
 
     .footer-text {
@@ -121,35 +158,15 @@
       color: #888;
     }
 
-    .hero-image {
-        position: absolute;
-        left: 100px;
-        top: 40%;
-        transform: translateY(-50%);
-        filter: drop-shadow(0 0 20px #00d9ff);
-        pointer-events: none;
-    }
-
-    @media (max-width: 1000px) {
-      .hero-image {
-        top: 10%;
-        left: 10%;
-        width: 10%;
-        max-width: 50px;
-      }
-    }
-
     .stats-table .label {
       text-align: left;
-      padding-right: 5rem;
-      width: 80%;         
+      width: 80%;
       font-weight: 500;
       color: #bbecff;
     }
 
     .stats-table .value {
-      text-align: right;
-      padding-right: 4rem;
+      text-align: center;
       font-weight: bold;
       color: #ffffff;
       width: 20%;
@@ -158,7 +175,6 @@
     .stats-table .points {
       text-align: right;
       font-weight: bold;
-      color: #ffffff;
       white-space: nowrap;
       width: 25%;
     }
@@ -168,7 +184,24 @@
     }
 
     .total-row {
-      background-color: rgba(0, 217, 255, 0.08);
+      font-size: 1.3rem;
+      font-weight: bold;
+    }
+
+    .total-points {
+      color: #ffe0b0 !important;
+      text-shadow: 0 0 2px #ffd9b3, 0 0 6px #fff2cc;
+      animation: glowPulse 2s infinite ease-in-out;
+    }
+
+
+    @keyframes glowPulse {
+      0%, 100% {
+        text-shadow: 0 0 2px #ffa94d, 0 0 6px #ff9933;
+      }
+      50% {
+        text-shadow: 0 0 6px #ffa94d, 0 0 12px #ff9933;
+      }
     }
 
     .points-positive {
@@ -189,41 +222,37 @@
       text-align: center;
       font-style: italic;
     }
-
   </style>
 </head>
 <body>
-    <div class="container">
-    <h1>Completed!</h1>
-
-    <div class="stats-box" id="statsBox"></div>
-
-    <div id="completion-date"></div>
-
-    <div class="footer-text">The legend of Sprinklez will continue...</div>
-
-    <div class="button-row">
-      <a class="btn" href="https://discord.gg/NKScm9qt97">Join Peak</a>
-      <a class="btn" href="https://cloverpi.github.io/sprinklez/">Play it!</a>
+  <div class="center-wrap">
+    <div class="image-wrapper">
+      <img src="images/wooo2.webp" class="hero-image" />
     </div>
 
-    <div class="patreon">
+    <div class="content-wrapper">
+      <h1>Completed!</h1>
+      <div class="stats-box" id="statsBox"></div>
+      <div id="completion-date"></div>
+      <div class="footer-text">The legend of Sprinklez will continue...</div>
+      <div class="button-row">
+        <a class="btn" href="https://discord.gg/NKScm9qt97">Join Peak</a>
+        <a class="btn" href="https://cloverpi.github.io/sprinklez/">Play it!</a>
+      </div>
+      <div class="patreon">
         <a href="https://patreon.com/CloverPi">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/9/94/Patreon_logo.svg" alt="Patreon Logo"/>
-        Support on Patreon
+          <img src="https://upload.wikimedia.org/wikipedia/commons/9/94/Patreon_logo.svg" alt="Patreon Logo"/>
+          Support on Patreon
         </a>
+      </div>
+      <div class="footer-note">© 2025 CloverPi | Written by Gnerf-Whitemane</div>
     </div>
-
-    <div class="footer-note">© 2025 CloverPi | Written by Gnerf-Whitemane</div>
-
-    <img src="images/wooo2.webp" alt="Wizard Victory" class="hero-image"/>
   </div>
+
   <script src="./lzstring.js"></script>
   <script>
     const params = new URLSearchParams(window.location.search);
     const win = params.get("win");
-
-    console.log(win);
 
     const statsBox = document.getElementById("statsBox");
     const completionDate = document.getElementById("completion-date");
@@ -232,69 +261,56 @@
       if (win) {
         const decoded = LZString.decompressFromEncodedURIComponent(win);
         const parsed = JSON.parse(decoded);
-
         parsed.as = parsed.asu + parsed.asm;
 
         function formatTime(ms) {
           const totalSeconds = Math.floor(ms / 1000);
-          const hrs = Math.floor(totalSeconds / 3600);
           const mins = Math.floor((totalSeconds % 3600) / 60);
           const secs = totalSeconds % 60;
-
-          const hh = hrs.toString().padStart(2, '0');
-          const mm = mins.toString().padStart(2, '0');
-          const ss = secs.toString().padStart(2, '0');
-
-          return `${mm}:${ss}`;
+          return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
         }
 
         const rows = [
-                ["AmberStrike Total", parsed.as ?? 0, parsed.as * 10],
-                ["AmberStrike Monstrosity", parsed.asm ?? 0, parsed.asm * 150],
-                ["AmberStrike Un'Sok", parsed.asu ?? 0, parsed.asu * 15],
-                ["Self Interrupts", parsed.si ?? 0, parsed.si * 50],
-                ["Self Explosions", parsed.se ?? 0, (-(parsed.se * 250))+250],
-                ["Monstrosity Interrupts", parsed.i ?? 0, parsed.i * 100],
-                ["Consume Amber", parsed.ca ?? 0, (parsed.ca * -1)+25],
-                ["Time to Kill ", formatTime(parsed.tp ?? 0), Math.floor(((parsed.tp/1000) * -1)+500)],
-            ];
+          ["AmberStrike Total", parsed.as ?? 0, parsed.as * 10],
+          ["AmberStrike Monstrosity", parsed.asm ?? 0, parsed.asm * 150],
+          ["AmberStrike Un'Sok", parsed.asu ?? 0, parsed.asu * 15],
+          ["Self Interrupts", parsed.si ?? 0, parsed.si * 50],
+          ["Self Explosions", parsed.se ?? 0, (-(parsed.se * 250)) + 250],
+          ["Monstrosity Interrupts", parsed.i ?? 0, parsed.i * 100],
+          ["Consume Amber", parsed.ca ?? 0, (parsed.ca * -1) + 25],
+          ["Time to Kill", formatTime(parsed.tp ?? 0), Math.floor(((parsed.tp / 1000) * -1) + 500)],
+        ];
 
         const totalPoints = rows.reduce((sum, [, , pts]) => sum + pts, 0);
 
         const tableHTML = `
-            <table class="stats-table">
-                <tbody>
-                ${rows.map(([label, value, points]) => `
-                    <tr>
-                    <td class="label">${label}</td>
-                    <td class="value">${value}</td>
-                    <td class="points ${points >= 0 ? 'points-positive' : 'points-negative'}">
-                        ${points} <span class="pts-label">pts</span>
-                    </td>
-                    </tr>
-                `).join("")}
-                <tr class="total-row">
-                    <td class="label">Total</td>
-                    <td class="value"></td>
-                    <td class="points points-positive total-points">
-                    ${totalPoints} <span class="pts-label">pts</span>
-                    </td>
+          <table class="stats-table">
+            <tbody>
+              ${rows.map(([label, value, points]) => `
+                <tr>
+                  <td class="label">${label}</td>
+                  <td class="value">${value}</td>
+                  <td class="points ${points >= 0 ? 'points-positive' : 'points-negative'}">
+                    ${points} <span class="pts-label">pts</span>
+                  </td>
                 </tr>
-                </tbody>
-            </table>
-            `;
-
+              `).join("")}
+              <tr class="total-row">
+                <td class="label">Total</td>
+                <td class="value"></td>
+                <td class="points points-positive total-points">
+                  ${totalPoints} <span class="pts-label">pts</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        `;
 
         statsBox.innerHTML = tableHTML;
-        completionDate.innerHTML = `Completed on: ${new Date(parsed.t).toLocaleString()}`
-        ;
-
-
-      } else {
-        // messageBox.textContent = defaultMessage;
+        completionDate.innerHTML = `Completed on: ${new Date(parsed.t).toLocaleString()}`;
       }
     } catch (e) {
-    //   messageBox.textContent = defaultMessage;
+      console.error("Failed to parse win data:", e);
     }
   </script>
 </body>
