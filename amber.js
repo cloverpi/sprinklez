@@ -1,10 +1,8 @@
-import * as ai from './ai.js';
+import { Named, Selector, Sequence, Condition, Action, inRange, unitInRange, applyVelocityFromGoals, performAttack } from './ai.js';
 import { win, loss } from './endscreen.js';
 import { startMenu } from './menu.js';
 import { newImage, newAudio, AudioManager, MuteIcon } from './commonui.js'
 import { clearButtons } from './button.js';
-
-const { Named, Selector, Sequence, Condition, Action, inRange, unitInRange, applyVelocityFromGoals, performAttack } = ai
 
 const canvasElement = document.getElementById("secret");
 const context = canvasElement.getContext("2d");
@@ -303,7 +301,7 @@ const gameEvents = {
     tutorialBreakFree: {
         condition: () => ( tutorialMode && units["redPlayer"].amber && (units["redPlayer"].hp/units["redPlayer"].maxhp) <= 0.22 ),
         action: () => {
-                    const warning = "Refresh (1) Amber-Strike if possible, and immediately (4) Break Free.";
+                    const warning = "Extend (1) Amber-Strike duration and (4) Break Free.";
                     raidWarning = warning;
                     AudioManager.play(raidWarningSound);
                     setTimeout( ()=> {if (raidWarning == warning) raidWarning = ""}, 4000);
@@ -502,14 +500,24 @@ const units = {
                     behavior: function() {
                         return Selector([
                         Sequence([
-                          Condition((u) => units["tank2"].willpower < 58 && puddles.length > 0 && distanceFromUnitToXY("tank2", puddles[0].x, puddles[0].y) >= 30+puddles[0].radius ),
+                          Condition((u) =>  {
+                                                const destable =  units["boss"].debuffs.find( (d) =>  d.name === "Destabilize");
+                                                if ( !destable ) return false;
+                                                if ( Date.now() - destable.lastApply > 10000 ) return false;
+
+                                                return units["tank2"].willpower < 58 &&
+                                                    puddles.length > 0 &&
+                                                    distanceFromUnitToXY("tank2", puddles[0].x, puddles[0].y) >= 30+puddles[0].radius;
+                                            }),
                           Named("Move to Puddle", Action((u) => {
                             u.goals = [{ x: puddles[0].x, y: puddles[0].y, weight: 1 }];
                             return { status: "running" };
                           }))
                         ]),
                         Sequence([
-                          Condition((u) => units["tank2"].willpower < 58 && puddles.length > 0 && distanceFromUnitToXY("tank2", puddles[0].x, puddles[0].y) <= 30+puddles[0].radius ),
+                          Condition((u) =>  units["tank2"].willpower < 58 &&
+                                            puddles.length > 0 && 
+                                            distanceFromUnitToXY("tank2", puddles[0].x, puddles[0].y) <= 30+puddles[0].radius ),
                           Named("Cast Consume Amber", Action((u) => {
                             u.goals = [];
                             u.velocityX = 0;
