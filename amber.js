@@ -758,9 +758,9 @@ const units = {
 
 let movementKeys = {
     "w": false,
-    "a": false,
+    "a": false, "q": false,
     "s": false,
-    "d": false,
+    "d": false, "e": false,
 }
 
 let spellKeys ={
@@ -1384,8 +1384,8 @@ function update(time) {
 
     if (movementKeys["w"]) velocityY = -1;
     if (movementKeys["s"]) velocityY = 1;
-    if (movementKeys["a"]) velocityX = -1;
-    if (movementKeys["d"]) velocityX = 1;
+    if (movementKeys["a"] || movementKeys["q"]) velocityX = -1;
+    if (movementKeys["d"] || movementKeys["e"]) velocityX = 1;
 
     if (velocityX !== 0 && velocityY !== 0) {
         velocityX *= Math.SQRT1_2;
@@ -1462,6 +1462,7 @@ document.addEventListener("keypress", event => {
     const key = String(event.key).toLowerCase();
     if (typeof movementKeys[key] === 'undefined') return;
     if (movementKeys[key] === true) return;
+
     movementKeys[key] = true;
 });
 
