@@ -1,14 +1,18 @@
 
-import { roundRect, drawEndScreenHeading, drawEndScreenBackground, newImage, MuteIcon } from './commonui.js'
+import { roundRect, drawEndScreenHeading, drawEndScreenBackground, InputLock, newImage, MuteIcon } from './commonui.js'
 import { createButton, clearButtons, buttonDraw } from './button.js';
+import { gameStartInit } from './amber.js';
 
 const canvasElement = document.getElementById("secret");
 const context = canvasElement.getContext("2d");
 const { width, height } = canvasElement;
+const replay = getCookie("replay").toLowerCase() == "true" ? true : false;
 
 const muteIcon = MuteIcon();
 muteIcon.resetBackground();
 const monstrosityImage = newImage("./images/ac.jpg");
+
+const hitZones = [];
 
 const abilityImage = [
     newImage("./images/as1.jpg"),
@@ -16,6 +20,50 @@ const abilityImage = [
     newImage("./images/ca1.jpg"),
     newImage("./images/bf1.jpg"),
 ];
+
+const youtube = [
+  { image: newImage('./images/joardee.webp'), link: 'https://youtube.com/joardee', text: `Joardee: Amber-Shaper Guide` },
+  // { image: newImage('./images/scottejaye.webp'), link: 'https://youtube.com/scottejaye', text: `Scottejaye: Amber-Shaper Guide` },
+];
+let youtubeIndex = 0;
+let youtubeInterval;
+
+function handleMouseMove(e) {
+  const rect = canvasElement.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+  let insideZones = 0;
+
+  hitZones.forEach( (z) => {
+    const inside =
+        mouseX >= z.x &&
+        mouseX <= z.x + z.width &&
+        mouseY >= z.y &&
+        mouseY <= z.y + z.height;
+
+    if (inside) insideZones++
+  });
+  canvasElement.style.cursor = insideZones > 0 ? "pointer" : "default";
+}
+
+function handleMouseUp(e) {
+  const rect = canvasElement.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+  let insideZones = 0;
+
+  hitZones.forEach( (z) => {
+    if (!InputLock.isLocked()) {
+      const inside =
+          mouseX >= z.x &&
+          mouseX <= z.x + z.width &&
+          mouseY >= z.y &&
+          mouseY <= z.y + z.height;
+
+      if (inside) z.onClick();
+    }
+  });
+}
 
 function imagesLoaded(...args) {
     let unloadedTotal = 0;
@@ -30,7 +78,60 @@ function imagesLoaded(...args) {
             image.onload = () => drawMechanicsOverview(...args);
         }
     });
+    youtube.forEach((y)=> {
+        if (!y.image.complete) {
+            unloadedTotal++;
+            y.image.onload = () => drawMechanicsOverview(...args);
+        }
+    });
     return unloadedTotal == 0;
+}
+
+function changeYoutube() {
+  const youtubeX = 555;
+  const youtubeY = 120+4;
+  const youtubeWidth = 190;
+  const youtubeHeight = 107;
+
+  const colors = {
+    boxFill: "rgba(0,180,255,0.15)",
+    boxShadow: "rgba(0,130,200,0.6)",
+    textFill: "#00B4FF",
+    textShadow: "rgba(0,60,120,0.7)"
+  };
+
+  context.save();
+  context.drawImage(youtube[youtubeIndex].image,youtubeX,youtubeY,youtubeWidth,youtubeHeight);
+  context.font = "13px 'Segoe UI', Arial";
+  context.fillStyle = colors.textFill;
+  context.shadowColor = colors.textShadow;
+  context.shadowBlur = 3;
+  context.textAlign = "center";
+  context.textBaseline = "top";
+  context.fillText(youtube[youtubeIndex].text, youtubeX+(youtubeWidth/2), 120+107+9);
+  context.restore();
+
+  hitZones.splice(0, hitZones.length);
+  
+  const index = youtubeIndex;
+  hitZones.push({x: youtubeX, y: youtubeY, width: youtubeWidth, height: youtubeHeight+20, index, onClick: () => { 
+    InputLock.lock();
+    window.open(youtube[index].link, "_blank"); 
+  } });
+
+  youtubeIndex++;
+  if (youtubeIndex >= youtube.length) youtubeIndex = 0;
+}
+
+function drawYouTube(colors){
+  context.save();
+  context.fillStyle = colors.boxFill;
+  roundRect(550, 120, 200, 134, 5);
+  context.fill();
+  context.restore();
+
+  changeYoutube();
+  
 }
 
 function drawAbilityWithIcon(image, title, cooldown, desc, x, y) {
@@ -62,8 +163,8 @@ function drawAbilityWithIcon(image, title, cooldown, desc, x, y) {
 }
 
 export function drawMechanicsOverview() {
-  if ( !imagesLoaded() ) return;
-  
+  if (!imagesLoaded()) return;
+
   context.clearRect(0, 0, width, height);
 
   drawEndScreenBackground({
@@ -72,12 +173,14 @@ export function drawMechanicsOverview() {
     grid: "rgba(0,180,255,0.1)"
   });
 
-  drawEndScreenHeading("Mechanics Overview", width / 2, 30, {
+  drawEndScreenHeading("Mechanics  Overview", width / 2, 30, {
     shadow: "rgba(0,180,255,0.8)",
     fill: "#00B4FF",
     highlight: "#e0f7ff",
     stroke: "#a0e0ff"
   });
+
+  const leftX = 60;
 
   const abilityColors = {
     boxFill: "rgba(0,180,255,0.15)",
@@ -92,21 +195,21 @@ export function drawMechanicsOverview() {
   context.shadowColor = abilityColors.textShadow;
   context.shadowBlur = 4;
   context.textAlign = "left";
-  context.fillText("Monstrosity Abilities", 80, 140);
-  context.fillText("Your Abilities", 80, 230);
-  context.fillText("Critical Responsibilities", 80, 480);
+  context.fillText("Monstrosity Abilities", leftX, 140);
+  context.fillText("Your Abilities", leftX, 240);
+  context.fillText("Critical Responsibilities", leftX, 480);
   context.restore();
 
-  drawAbilityWithIcon(monstrosityImage, "Amber Explosion", "[48s CD, 2s cast]", "AoE Explosion dealing ~500k to all raid members.", 80, 150);
+  drawAbilityWithIcon(monstrosityImage, "Amber Explosion", "[48s CD, 2s cast]", "AoE Explosion dealing ~500k to all raid members.", leftX, 150);
 
-  drawAbilityWithIcon(abilityImage[0], "[1] Amber Strike", "[6s CD, melee range]", "Interrupts Amber Explosion, applies stacking damage taken debuff.", 80, 240);
-  drawAbilityWithIcon(abilityImage[1], "[2] Struggle for Control", "[6s CD, 8 willpower]", "Interrupts your own Amber Explosion every 13s.", 80, 290);
-  drawAbilityWithIcon(abilityImage[2], "[3] Consume Amber", "[melee range]", "Refills willpower (50 willpower phase 3, 20 willpower otherwise)", 80, 340);
-  drawAbilityWithIcon(abilityImage[3], "[4] Break Free", "[<20% hp]", "Exits construct. Also interrupts self.", 80, 390);
+  drawAbilityWithIcon(abilityImage[0], "[1] Amber Strike", "[6s CD, melee range]", "Interrupts Amber Explosion, applies stacking damage taken debuff.", leftX, 250);
+  drawAbilityWithIcon(abilityImage[1], "[2] Struggle for Control", "[6s CD, 8 willpower]", "Interrupts your own Amber Explosion every 13s.", leftX, 300);
+  drawAbilityWithIcon(abilityImage[2], "[3] Consume Amber", "[melee range]", "Refills willpower (50 willpower phase 3, 20 willpower otherwise)", leftX, 350);
+  drawAbilityWithIcon(abilityImage[3], "[4] Break Free", "[<20% hp]", "Exits construct. Also interrupts self.", leftX, 400);
 
-  const notesBoxX = 70;
+  const notesBoxX = leftX - 10;
   const notesBoxY = 490;
-  const notesBoxWidth = 660;
+  const notesBoxWidth = 700;
   const notesBoxHeight = 140;
 
   context.save();
@@ -135,18 +238,19 @@ export function drawMechanicsOverview() {
     "😵 You cast your own AE every 13s, interrupt with [2]. Watch your willpower!",
     "🧟 As a non-tank, try not to use Consume Amber [3] at all until phase 3."
   ];
-  let y = notesBoxY+10;
+  let y = notesBoxY + 10;
   for (const line of lines) {
     context.fillText(line, notesBoxX + 20, y);
     y += 26;
   }
-
   context.restore();
 
+  drawYouTube(abilityColors);
 
   buttonDraw();
   muteIcon.draw();
 }
+
 
 export function mechanics(back, start) {
   clearButtons();
@@ -160,7 +264,7 @@ export function mechanics(back, start) {
     color: "#5ed65e",
     textColor: "#ffffff",
     onClick: () => { 
-      muteIcon.detach();
+      cleanupMechanics();
       back();
     }
   });
@@ -174,11 +278,28 @@ export function mechanics(back, start) {
     color: "#ff5740",
     textColor: "#ffffff",
     onClick: () => {
-      muteIcon.detach();
+      if (typeof(start) != "function") {
+        start = gameStartInit;
+        setCookie("replay", true, 365);
+      };
+      cleanupMechanics();
       start();
     }
   });
 
+  canvasElement.addEventListener("mouseup", handleMouseUp);
+  canvasElement.addEventListener("mousemove", handleMouseMove);
   muteIcon.attach();
+
+  youtubeInterval = setInterval(drawMechanicsOverview, 10000);
+
   drawMechanicsOverview();
 }
+
+function cleanupMechanics(){
+  canvasElement.removeEventListener('mousemove', handleMouseMove);
+  canvasElement.removeEventListener('mouseup', handleMouseUp);
+  clearInterval(youtubeInterval);
+  muteIcon.detach();
+}
+

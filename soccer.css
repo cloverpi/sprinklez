@@ -1,7 +1,3 @@
-/* * {
-    padding: 0;
-    margin: 0;
-} */
 
 h1{
     color: aliceblue;
@@ -36,13 +32,56 @@ body {
   background: none;
   cursor: pointer;
   border-radius: 12px;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 0 8px rgba(255,255,255,0.1);
   transition: transform 0.2s ease;
   user-select: none;
 }
+
 .ability:active {
   transform: scale(0.95);
+}
+
+.ability .tt {
+  position: absolute;
+  bottom: 110%;
+  left: 50%;
+  width: 280px;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.92);
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  line-height: 1.35;
+  font-size: 13px;
+  max-width: 280px;
+  z-index: 999;
+  pointer-events: none;
+  text-align: left;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.ability:hover .tt { opacity: 1; }
+
+.ability .tt::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px;
+  border-style: solid;
+  border-color: rgba(0, 0, 0, 0.92) transparent transparent transparent;
+}
+
+.ability .tt-title {
+  color: #ffd100;
+  font-weight: 700;
+}
+
+.ability .tt-desc {
+  color: #fff;
 }
 
 .ability img {
@@ -67,7 +106,14 @@ body {
   clip-path: url(#roundedClip);
 }
 
-.ability.disabled {
+/* .ability.disabled {
+  filter: brightness(0.2);
+} */
+
+.ability.disabled img,
+.ability.disabled .cooldown-overlay,
+.ability.disabled .corner-label,
+.ability.disabled .cooldown-text {
   filter: brightness(0.2);
 }
 

@@ -5,6 +5,7 @@ import { startMenu } from './menu.js';
 const canvasElement = document.getElementById("secret");
 const context = canvasElement.getContext("2d");
 const { width, height } = canvasElement;
+const replay = getCookie("replay").toLowerCase() == "true" ? true : false;
 
 const topHeight = height * 2 / 3;
 const bottomHeight = height - topHeight;
@@ -354,40 +355,41 @@ export function title(mechanics, controls, start) {
       const smallButtonWidth = 160 * 0.75;
       const largeButtonWidth = 280 * 1.11;
 
-      // Verticals
       const mechanicsY = topHeight + 80;
       const controlsY = topHeight + 80;
       const startY = topHeight + 140;
 
-      createButton({
-        x: canvasCenterX - smallButtonWidth - 10, // left of center
-        y: mechanicsY,
-        width: 160,
-        height: 40,
-        scale: 0.75,
-        text: "Mechanics",
-        color: "#4588c7",
-        textColor: "#fff",
-        onClick: () => {
-          cleanupTitle();
-          mechanics(startMenu, start);
-        }
-      });
+      if (replay) {
+        createButton({
+          x: canvasCenterX - smallButtonWidth - 10,
+          y: mechanicsY,
+          width: 160,
+          height: 40,
+          scale: 0.75,
+          text: "Mechanics",
+          color: "#4588c7",
+          textColor: "#fff",
+          onClick: () => {
+            cleanupTitle();
+            mechanics(startMenu, start);
+          }
+        });
 
-      createButton({
-        x: canvasCenterX + 10, // right of center
-        y: controlsY,
-        width: 160,
-        height: 40,
-        scale: 0.75,
-        text: "Controls",
-        color: "#66cc66",
-        textColor: "#fff",
-        onClick: () => {
-          cleanupTitle();
-          controls(startMenu, start);
-        }
-      });
+        createButton({
+          x: canvasCenterX + 10,
+          y: controlsY,
+          width: 160,
+          height: 40,
+          scale: 0.75,
+          text: "Controls",
+          color: "#66cc66",
+          textColor: "#fff",
+          onClick: () => {
+            cleanupTitle();
+            controls(startMenu, start);
+          }
+        });
+      }
 
       createButton({
         x: canvasCenterX - (largeButtonWidth / 2),
@@ -400,7 +402,11 @@ export function title(mechanics, controls, start) {
         textColor: "#fff",
         onClick: () => {
           cleanupTitle();
-          start();
+          if (replay) {
+            start();
+          } else {
+            controls(startMenu, mechanics);
+          }
         }
       });
 

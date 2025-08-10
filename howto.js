@@ -6,6 +6,7 @@ const canvasElement = document.getElementById("secret");
 const context = canvasElement.getContext("2d");
 let hoveredSection = null;
 let hoverInterval = null;
+const replay = getCookie("replay").toLowerCase() == "true" ? true : false;
 
 const muteIcon = MuteIcon();
 muteIcon.resetBackground();
@@ -141,7 +142,7 @@ export function howToPlayInit(back, start) {
                 clearInterval(hoverInterval);
                 hoverInterval = null;
             }
-            back()
+            back();
         }
     });
 
@@ -150,7 +151,7 @@ export function howToPlayInit(back, start) {
         y: height - 80,
         width: 150,
         height: 40,
-        text: "Start",
+        text: replay ? "Start" : "Next",
         color: "#ff5740",
         textColor: "#ffffff",
         onClick: () => {
@@ -161,7 +162,7 @@ export function howToPlayInit(back, start) {
                 clearInterval(hoverInterval);
                 hoverInterval = null;
             }
-            start();
+            start(back);
         }
     });
 

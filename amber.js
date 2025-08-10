@@ -229,9 +229,7 @@ const gameEvents = {
                         const monstrosityDebuffs = units["monstrosity"].debuffs?.length || 0;
                         units["monstrosity"].debuffs = removeExpiredDebuffs(units["monstrosity"].debuffs);
                         const currentMonstrosityDebuffs = units["monstrosity"].debuffs?.length || 0;
-                        console.log(`old: ${monstrosityDebuffs}   new: ${currentMonstrosityDebuffs}` )
-                        if ( blackBoard.phase != 3 && monstrosityDebuffs > currentMonstrosityDebuffs) {
-                            
+                        if ( blackBoard.phase != 3 && monstrosityDebuffs > currentMonstrosityDebuffs) {         
                             stats.failReason = "debuff"
                             blackBoard["end"].loss = true;
                         }
