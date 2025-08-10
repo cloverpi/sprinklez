@@ -191,7 +191,7 @@ export function win(stats) {
                 ["Self Explosions", stats.selfExplosion ?? 0, (-(stats.selfExplosion * 250))+250],
                 ["Monstrosity Interrupts", stats.interrupt ?? 0, stats.interrupt * 100],
                 ["Consume Amber", stats.consumeAmber ?? 0, (stats.consumeAmber * -1)+25],
-                ["Time to Kill ", formatTime(stats.timePlayed ?? 0), Math.floor(((stats.timePlayed/1000) * -1)+500)],
+                ["Time to Kill ", formatTime(stats.timePlayed ?? 0), (Math.floor(stats.timePlayed/1000) * (-30)) + 7150],
             ];
 
   const totalPoints = rows.reduce((sum, [, , pts]) => sum + pts, 0);
@@ -373,6 +373,9 @@ export function loss(stats) {
       break;
     case "hp":
       failReason = "You ran out of health.";
+      break;
+    case "debuff":
+      failReason = "You let Destabalize fall off the Monstrosity!"
       break;
   }
   const boxStatsInfo = cheeseParagraph(
