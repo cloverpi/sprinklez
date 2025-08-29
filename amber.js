@@ -268,70 +268,49 @@ const gameEvents = {
     tutorialAmberStrike: {
         condition: (time) => (tutorialMode && units["redPlayer"].amber),
         action: (time) => {
-                    const warning = "Press (1) Amber-Strike on Amber Monstrosity on CD.";
-                    raidWarning = warning;
-                    AudioManager.play(raidWarningSound);
-                    setTimeout( ()=> raidWarning = "", 4000);
+                    setRaidWarning("Press (1) Amber-Strike on Amber Monstrosity on CD.");
                     },
         endon: () => true,
     },
     tutorialStruggleForControl: {
         condition: () => ( tutorialMode && units["redPlayer"].amber && units["redPlayer"].casting == 0 ),
         action: (time) => {
-                    const warning = "Press (2) Struggle For Control to interrupt: Amber Explosion(YOU)";
-                    raidWarning = warning;
-                    AudioManager.play(raidWarningSound);
-                    setTimeout( ()=> raidWarning = "", 4000);
+                    setRaidWarning("Press (2) Struggle For Control to interrupt: Amber Explosion(YOU)");
                     },
         endon: () => true,
     },
     tutorialHoldAmberStrike: {
         condition: (time) => ( tutorialMode && units["redPlayer"].amber && (units["monstrosity"].spells[0].cooldown*1000)-(time-units["monstrosity"].spells[0].lastCast) >= 12000 && (units["monstrosity"].spells[0].cooldown*1000)-(time-units["monstrosity"].spells[0].lastCast) <= 13000),
         action: (time) => {
-                    const warning = "Hold off on (1) Amber-Strike until Amber Explosion has 6 - 5s on CD.";
-                    raidWarning = warning;
-                    AudioManager.play(raidWarningSound);
-                    setTimeout( ()=> {if (raidWarning == warning) raidWarning = ""}, 4000);
+                    setRaidWarning("Hold off on (1) Amber-Strike until Amber Explosion has 6 - 5s on CD.");
                     },
         endon: () => true,
     },
     tutorialInterruptAmberExplosion: {
         condition: () => ( tutorialMode && units["redPlayer"].amber && units["monstrosity"].casting == 0 ),
         action: () => {
-                    const warning = "Press (1) Amber-Strike to interrupt Amber-Monstrosity."
-                    raidWarning = warning;
-                    AudioManager.play(raidWarningSound);
-                    setTimeout( ()=> {if (raidWarning == warning) raidWarning = ""}, 4000);
+                    setRaidWarning("Press (1) Amber-Strike to interrupt Amber-Monstrosity.");
                     },
         endon: () => true,
     },
     tutorialBreakFree: {
         condition: () => ( tutorialMode && units["redPlayer"].amber && (units["redPlayer"].hp/units["redPlayer"].maxhp) <= 0.22 ),
         action: () => {
-                    const warning = "Extend (1) Amber-Strike duration and (4) Break Free.";
-                    raidWarning = warning;
-                    AudioManager.play(raidWarningSound);
-                    setTimeout( ()=> {if (raidWarning == warning) raidWarning = ""}, 4000);
+                    setRaidWarning("Extend (1) Amber-Strike duration and (4) Break Free.");
                     },
         endon: () => true,
     },
     tutorialConsumeAmber: {
         condition: () => ( tutorialMode && units["redPlayer"].amber && blackBoard.phase == 3 ),
         action: () => {
-                    const warning = "Press (3) Consume Amber when near an Amber Pool with willpower less than 50%.";
-                    raidWarning = warning;
-                    AudioManager.play(raidWarningSound);
-                    setTimeout( ()=> {if (raidWarning == warning) raidWarning = ""}, 4000);
+                    setRaidWarning("Press (3) Consume Amber when near an Amber Pool with willpower less than 50%.");
                     },
         endon: () => true,
     },
     tutorialConsumeAmberFail: {
         condition: () => ( tutorialMode && blackBoard.phase != 3 && stats.consumeAmber > 0 ),
         action: () => {
-                    const warning = "Do not (3) Consume Amber before phase 3!";
-                    raidWarning = warning;
-                    AudioManager.play(raidWarningSound);
-                    setTimeout( ()=> {if (raidWarning == warning) raidWarning = ""}, 4000);
+                    setRaidWarning("Do not (3) Consume Amber before phase 3!");
                     },
         endon: () => true,
     },
@@ -764,17 +743,21 @@ const units = {
 }
 
 let movementKeys = {
-    "KeyW": false,
-    "KeyA": false,
-    "KeyS": false,
+    "KeyW": false, 
     "KeyD": false,
+    "KeyA": false, "KeyQ": false,
+    "KeyS": false, "KeyE": false,
 }
 
 let spellKeys ={
-    "Digit1": {id: "amberstrike", time: 0} ,
-    "Digit2": {id: "struggle", time: 0} ,
-    "Digit3": {id: "consume", time: 0} ,
-    "Digit4": {id: "break", time: 0} ,
+    "Digit1": {id: "amberstrike", time: 0},
+    "Digit2": {id: "struggle", time: 0},
+    "Digit3": {id: "consume", time: 0},
+    "Digit4": {id: "break", time: 0},
+    "Numpad1": {id: "amberstrike", time: 0},
+    "Numpad2": {id: "struggle", time: 0},
+    "Numpad3": {id: "consume", time: 0},
+    "Numpad4": {id: "break", time: 0},
 }
 
 function playAmbience() {
@@ -813,6 +796,13 @@ function randomBellCurve(min, max, skew) {
     num += min
   }
   return num
+}
+
+function setRaidWarning(warning, playSound = true, timeout = 4000) {
+    raidWarning = warning;
+    if (playSound) AudioManager.play(raidWarningSound);
+
+    setTimeout( ()=> {if (raidWarning == warning) raidWarning = ""}, 4000);
 }
 
 
@@ -1391,8 +1381,13 @@ function update(time) {
 
     if (movementKeys["KeyW"]) velocityY = -1;
     if (movementKeys["KeyS"]) velocityY = 1;
-    if (movementKeys["KeyA"]) velocityX = -1;
-    if (movementKeys["KeyD"]) velocityX = 1;
+    if (movementKeys["KeyA"] || movementKeys["KeyQ"] ) velocityX = -1;
+    if (movementKeys["KeyD"] || movementKeys["KeyE"] ) velocityX = 1;
+
+    if (units["redPlayer"].casting == 0) {
+        velocityX = 0;
+        velocityY = 0;
+    }
 
     if (velocityX !== 0 && velocityY !== 0) {
         velocityX *= Math.SQRT1_2;
@@ -1536,16 +1531,26 @@ function canDoAction(id) {
     const target = units[player.target];
     switch (id) {
         case "amberstrike":
-            if (target != undefined && target.active) bCanDoAction = unitInRange(player, target, meleeRange);
+            if (target != undefined && target.active) {
+                if (player.casting == -1) {
+                    bCanDoAction = unitInRange(player, target, meleeRange);
+                } else {
+                    setRaidWarning("You cannot do that while casting Amber Explosion.");
+                }
+            }
             break;
         case "struggle":
             bCanDoAction = (player.willpower >= 8);
             break;
         case "consume":
-            if (puddles.length > 0) { 
-                puddles.sort((a,b) => distanceFromUnitToXY("redPlayer", a.x, a.y) - distanceFromUnitToXY("redPlayer", b.x, b.y));
-                const puddle = puddles[0];
-                bCanDoAction = (distanceFromUnitToXY("redPlayer", puddle.x, puddle.y) <= 30+puddle.radius);
+            if (player.casting == -1) {
+                if (puddles.length > 0) { 
+                    puddles.sort((a,b) => distanceFromUnitToXY("redPlayer", a.x, a.y) - distanceFromUnitToXY("redPlayer", b.x, b.y));
+                    const puddle = puddles[0];
+                    bCanDoAction = (distanceFromUnitToXY("redPlayer", puddle.x, puddle.y) <= 30+puddle.radius);
+                }
+            } else {
+                setRaidWarning("You cannot do that while casting Amber Explosion.");
             }
             break;
         case "break":
