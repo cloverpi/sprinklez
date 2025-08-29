@@ -111,7 +111,7 @@ export class KeyboardLayoutDetector {
 	getFallbackLayout() {
 		// Fallback to browser language detection
 		const lang = navigator.language || navigator.userLanguage || 'en'
-		const azertyLanguages = ['fr', 'be', 'fr-BE', 'fr-FR', 'fr-CA']
+		const azertyLanguages = ['fr', 'be', 'fr-BE', 'fr-FR']
 		const result = azertyLanguages.some((l) => lang.toLowerCase().startsWith(l.toLowerCase()))
 			? 'azerty'
 			: 'qwerty'
