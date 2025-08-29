@@ -2,11 +2,14 @@
 import { roundRect, drawEndScreenHeading, drawEndScreenBackground, InputLock, newImage, MuteIcon } from './commonui.js'
 import { createButton, clearButtons, buttonDraw } from './button.js';
 import { gameStartInit } from './amber.js';
+import { layoutDetector, KeyMappings } from './keyboard-layout.js';
 
 const canvasElement = document.getElementById("secret");
 const context = canvasElement.getContext("2d");
 const { width, height } = canvasElement;
 const replay = getCookie("replay").toLowerCase() == "true" ? true : false;
+
+let keyboardLayout = layoutDetector.getLayoutSync();
 
 const muteIcon = MuteIcon();
 muteIcon.resetBackground();
@@ -202,10 +205,13 @@ export function drawMechanicsOverview() {
 
   drawAbilityWithIcon(monstrosityImage, "Amber Explosion", "[48s CD, 2s cast]", "AoE Explosion dealing ~500k to all raid members.", leftX, 150);
 
-  drawAbilityWithIcon(abilityImage[0], "[1] Amber Strike", "[6s CD, melee range]", "Interrupts Amber Explosion, applies stacking damage taken debuff.", leftX, 250);
-  drawAbilityWithIcon(abilityImage[1], "[2] Struggle for Control", "[6s CD, 8 willpower]", "Interrupts your own Amber Explosion every 13s.", leftX, 300);
-  drawAbilityWithIcon(abilityImage[2], "[3] Consume Amber", "[melee range]", "Refills willpower (50 willpower phase 3, 20 willpower otherwise)", leftX, 350);
-  drawAbilityWithIcon(abilityImage[3], "[4] Break Free", "[<20% hp]", "Exits construct. Also interrupts self.", leftX, 400);
+  // Get dynamic ability keys based on keyboard layout
+  const abilityKeys = KeyMappings.getAbilityKeys(keyboardLayout);
+  
+  drawAbilityWithIcon(abilityImage[0], `[${abilityKeys[0]}] Amber Strike`, "[6s CD, melee range]", "Interrupts Amber Explosion, applies stacking damage taken debuff.", leftX, 250);
+  drawAbilityWithIcon(abilityImage[1], `[${abilityKeys[1]}] Struggle for Control`, "[6s CD, 8 willpower]", "Interrupts your own Amber Explosion every 13s.", leftX, 300);
+  drawAbilityWithIcon(abilityImage[2], `[${abilityKeys[2]}] Consume Amber`, "[melee range]", "Refills willpower (50 willpower phase 3, 20 willpower otherwise)", leftX, 350);
+  drawAbilityWithIcon(abilityImage[3], `[${abilityKeys[3]}] Break Free`, "[<20% hp]", "Exits construct. Also interrupts self.", leftX, 400);
 
   const notesBoxX = leftX - 10;
   const notesBoxY = 490;
@@ -235,8 +241,8 @@ export function drawMechanicsOverview() {
     "🎯 Your primary target is Amber Monstrosity, mostly ignore Un'Sok until phase 3.",
     "💀 Ensure you interrupt every Amber Monstrosity-Amber Explosion.",
     "⚠️ When Amber Explosion cooldown is nearing, save Amber Strike CD to interrupt.",
-    "😵 You cast your own AE every 13s, interrupt with [2]. Watch your willpower!",
-    "🧟 As a non-tank, try not to use Consume Amber [3] at all until phase 3."
+    `😵 You cast your own AE every 13s, interrupt with [${abilityKeys[1]}]. Watch your willpower!`,
+    `🧟 As a non-tank, try not to use Consume Amber [${abilityKeys[2]}] at all until phase 3.`
   ];
   let y = notesBoxY + 10;
   for (const line of lines) {
@@ -254,6 +260,21 @@ export function drawMechanicsOverview() {
 
 export function mechanics(back, start) {
   clearButtons();
+
+  // Register callback for layout changes
+  const layoutChangeCallback = (newLayout) => {
+    keyboardLayout = newLayout;
+    console.log(`Mechanics page updating to layout: ${newLayout}`);
+    drawMechanicsOverview();
+  };
+  
+  layoutDetector.onLayoutChange(layoutChangeCallback);
+
+  // Trigger layout detection if not done yet
+  layoutDetector.detectLayout().then((detectedLayout) => {
+    keyboardLayout = detectedLayout;
+    drawMechanicsOverview(); // Redraw if layout changed
+  });
 
   createButton({
     x: 220,

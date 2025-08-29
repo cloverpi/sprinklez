@@ -764,17 +764,17 @@ const units = {
 }
 
 let movementKeys = {
-    "w": false,
-    "a": false, "q": false,
-    "s": false,
-    "d": false, "e": false,
+    "KeyW": false,
+    "KeyA": false,
+    "KeyS": false,
+    "KeyD": false,
 }
 
 let spellKeys ={
-    "1": {id: "amberstrike", time: 0} ,
-    "2": {id: "struggle", time: 0} ,
-    "3": {id: "consume", time: 0} ,
-    "4": {id: "break", time: 0} ,
+    "Digit1": {id: "amberstrike", time: 0} ,
+    "Digit2": {id: "struggle", time: 0} ,
+    "Digit3": {id: "consume", time: 0} ,
+    "Digit4": {id: "break", time: 0} ,
 }
 
 function playAmbience() {
@@ -1389,10 +1389,10 @@ function update(time) {
     let velocityX = 0;
     let velocityY = 0;
 
-    if (movementKeys["w"]) velocityY = -1;
-    if (movementKeys["s"]) velocityY = 1;
-    if (movementKeys["a"] || movementKeys["q"]) velocityX = -1;
-    if (movementKeys["d"] || movementKeys["e"]) velocityX = 1;
+    if (movementKeys["KeyW"]) velocityY = -1;
+    if (movementKeys["KeyS"]) velocityY = 1;
+    if (movementKeys["KeyA"]) velocityX = -1;
+    if (movementKeys["KeyD"]) velocityX = 1;
 
     if (velocityX !== 0 && velocityY !== 0) {
         velocityX *= Math.SQRT1_2;
@@ -1460,22 +1460,20 @@ document.addEventListener("keydown", e => {
 });
 
 document.addEventListener("keyup", event => {
-    const key = String(event.key).toLowerCase();
-    if (typeof movementKeys[key] === 'undefined') return;
-    movementKeys[key] = false;
+    if (typeof movementKeys[event.code] === 'undefined') return;
+    movementKeys[event.code] = false;
 });
 
 document.addEventListener("keypress", event => {
-    const key = String(event.key).toLowerCase();
-    if (typeof movementKeys[key] === 'undefined') return;
-    if (movementKeys[key] === true) return;
+    if (typeof movementKeys[event.code] === 'undefined') return;
+    if (movementKeys[event.code] === true) return;
 
-    movementKeys[key] = true;
+    movementKeys[event.code] = true;
 });
 
 document.addEventListener("keypress", event => {
-    if (typeof spellKeys[event.key] === 'undefined') return;
-    const button = document.querySelector(`#${spellKeys[event.key].id}`);
+    if (typeof spellKeys[event.code] === 'undefined') return;
+    const button = document.querySelector(`#${spellKeys[event.code].id}`);
     if (units["redPlayer"].amber) { 
         button.click();
     } else {

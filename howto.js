@@ -1,6 +1,7 @@
 
 import { roundRect, drawEndScreenHeading, drawEndScreenBackground, newImage, MuteIcon } from './commonui.js'
 import { createButton, clearButtons, buttonDraw, simulateClick  } from './button.js';
+import { layoutDetector, KeyMappings } from './keyboard-layout.js';
 
 const canvasElement = document.getElementById("secret");
 const context = canvasElement.getContext("2d");
@@ -30,6 +31,8 @@ const abilityImage = [
 const { width, height } = canvasElement;
 const sections = [];
 const mouse = { x: 0, y: 0 };
+
+let keyboardLayout = layoutDetector.getLayoutSync();
 const colors = {
         background: {
         bgTop: "#001322",
@@ -68,6 +71,39 @@ export function howToPlayInit(back, start) {
     const sectionX = 60;
     let sectionY = 110;
 
+    // Register callback for layout changes
+    const layoutChangeCallback = (newLayout) => {
+        keyboardLayout = newLayout;
+        console.log(`Controls page updating to layout: ${newLayout}`);
+        // Re-initialize with new layout
+        howToPlayInit(back, start);
+        drawHowToPlay();
+    };
+    
+    layoutDetector.onLayoutChange(layoutChangeCallback);
+
+    // Trigger layout detection if not done yet
+    layoutDetector.detectLayout().then((detectedLayout) => {
+        keyboardLayout = detectedLayout;
+        drawHowToPlay(); // Redraw if layout changed
+    });
+
+    // Dynamic key mappings based on detected keyboard layout
+    const getMovementKeys = () => KeyMappings.getMovementKeys(keyboardLayout);
+    const getAbilityKeys = () => KeyMappings.getAbilityKeys(keyboardLayout);
+    
+    const getMovementLabel = () => {
+        const layoutName = KeyMappings.getLayoutDisplayName(keyboardLayout);
+        const keys = KeyMappings.getMovementKeys(keyboardLayout);
+        return `${keys.join("")} Movement (${layoutName})`;
+    };
+
+    const getAbilityLabel = () => {
+        const layoutName = KeyMappings.getLayoutDisplayName(keyboardLayout);
+        const keys = KeyMappings.getAbilityKeys(keyboardLayout);
+        return `Abilities (${layoutName}: ${keys.join("")})`;
+    };
+
     const sectionData = [
         {
             label: "Tab Targeting",
@@ -76,14 +112,14 @@ export function howToPlayInit(back, start) {
             images: tabImage,
         },
         {
-            label: "WASD Movement",
-            keys: ["W", "A", "S", "D"],
+            label: getMovementLabel(),
+            keys: getMovementKeys(),
             baseColor: "#224444",
             images: wasdImage,
         },
         {
-            label: "Abilities",
-            keys: ["1", "2", "3", "4"],
+            label: getAbilityLabel(),
+            keys: getAbilityKeys(),
             baseColor: "#443322",
             images: abilityImage,
         }
