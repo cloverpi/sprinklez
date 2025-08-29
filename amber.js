@@ -764,7 +764,7 @@ const units = {
 }
 
 let movementKeys = {
-    "w": false,
+    "w": false, "z": false,
     "a": false, "q": false,
     "s": false,
     "d": false, "e": false,
@@ -1389,7 +1389,7 @@ function update(time) {
     let velocityX = 0;
     let velocityY = 0;
 
-    if (movementKeys["w"]) velocityY = -1;
+    if (movementKeys["w"] || movementKeys["z"]) velocityY = -1;
     if (movementKeys["s"]) velocityY = 1;
     if (movementKeys["a"] || movementKeys["q"]) velocityX = -1;
     if (movementKeys["d"] || movementKeys["e"]) velocityX = 1;
