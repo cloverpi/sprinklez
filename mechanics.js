@@ -26,6 +26,7 @@ const abilityImage = [
 
 const youtube = [
   { image: newImage('./images/joardee.webp'), link: 'https://www.youtube.com/watch?v=82s_NAFlKLw', text: `Joardee: Amber-Shaper Guide` },
+  { image: newImage('./images/thegreatmetv.webp'), link: 'https://www.youtube.com/watch?v=NnaMCEOvdV8', text: `ThegreatmeTV: Construct Guide` },
   // { image: newImage('./images/scottejaye.webp'), link: 'https://youtube.com/scottejaye', text: `Scottejaye: Amber-Shaper Guide` },
 ];
 let youtubeIndex = 0;
